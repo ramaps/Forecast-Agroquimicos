@@ -95,7 +95,8 @@
     }
 
     const series = Data.obtenerSeriesPorProductos(productosSeleccionados);
-    Charts.actualizarGraficoPrincipal(series, titulo, subtitulo);
+    // *** PASAR productosSeleccionados para que las sugerencias usen el mismo conjunto ***
+    Charts.actualizarGraficoPrincipal(series, titulo, subtitulo, productosSeleccionados);
   });
 
   // Exportar CSV
@@ -148,7 +149,6 @@
       }
       UI.elements.infoRemito.innerHTML = infoText;
 
-      // Vista previa remito
       const previewData = [];
       let count = 0;
       for (let [prod, regs] of Data.consumosPorProducto) {
@@ -178,7 +178,6 @@
     }
   }
 
-  // Restaurar estado si hay algo guardado
   const estado = UI.cargarEstado();
   if (estado) {
     console.log('Estado anterior:', estado);
