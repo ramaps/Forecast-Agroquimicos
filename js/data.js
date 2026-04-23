@@ -10,7 +10,7 @@ const Data = {
   centrosSet: new Set(),
   stockFileObj: null,
   remitoFileObj: null,
-  stockDisponible: new Map(), // producto -> cantidad en stock
+  stockDisponible: new Map(), // producto -> cantidad en stock real (stock final)
 
   reset() {
     this.mapeoProducto.clear();
@@ -35,45 +35,84 @@ const Data = {
           const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
           if (rows.length < 2) throw new Error('Archivo sin datos');
           const headers = rows[0].map(h => String(h).toLowerCase().trim());
+
           const idxProducto = headers.findIndex(h => h.includes('descarticulo'));
           const idxCentro = headers.findIndex(h => h.includes('desccentrooperativo'));
-          // Intentar capturar la columna de stock real (Existencia o StockReal)
-          const idxExistencia = headers.findIndex(h => h.includes('existencia') || h.includes('stockreal'));
-          if (idxProducto === -1 || idxCentro === -1) throw new Error('Columnas requeridas: DescArticulo, DescCentroOperativo');
+
+          // Buscar columnas de stock confiables (primero StockReal, después Existencia)
+          const idxStockReal = headers.findIndex(h => h.includes('stockreal'));
+          const idxExistencia = headers.findIndex(h => h.includes('existencia'));
+
+          if (idxProducto === -1 || idxCentro === -1) {
+            throw new Error('Columnas requeridas: DescArticulo, DescCentroOperativo');
+          }
 
           const mapaTemp = new Map();
-          const stockTemp = new Map();
-          for (let i=1; i<rows.length; i++) {
+          const stockTemp = new Map();   // aquí juntaremos el stock final
+
+          for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
-            if (!row || row.length===0) continue;
+            if (!row || row.length === 0) continue;
+
             const productoRaw = row[idxProducto];
             const centroRaw = row[idxCentro];
-            if (productoRaw && centroRaw) {
-              const centroStr = Utils.normalizar(centroRaw);
-              if (!centroStr.includes('AGROQUIMICOS')) continue;
-              const familia = Utils.extraerFamilia(centroRaw);
-              if (!familia) continue;
-              const prodNorm = Utils.normalizar(productoRaw);
-              if (!mapaTemp.has(prodNorm)) {
-                const centroOriginal = String(centroRaw).trim();
-                const partes = centroOriginal.split('\\');
-                const centroNombre = partes[0]?.trim() || centroOriginal;
-                mapaTemp.set(prodNorm, { centro: centroOriginal, centroNombre, familia, productoOriginal: String(productoRaw).trim() });
-                Data.familiasSet.add(familia);
-                Data.centrosSet.add(centroNombre);
-              }
-              // Acumular stock (solo valores positivos)
-              if (idxExistencia >= 0) {
-                const existencia = parseFloat(row[idxExistencia]) || 0;
-                if (existencia > 0) {
-                  stockTemp.set(prodNorm, (stockTemp.get(prodNorm) || 0) + existencia);
+            if (!productoRaw || !centroRaw) continue;
+
+            const centroStr = Utils.normalizar(centroRaw);
+            if (!centroStr.includes('AGROQUIMICOS')) continue;
+
+            const familia = Utils.extraerFamilia(centroRaw);
+            if (!familia) continue;
+
+            const prodNorm = Utils.normalizar(productoRaw);
+
+            // Almacenar info del producto (solo primera vez)
+            if (!mapaTemp.has(prodNorm)) {
+              const centroOriginal = String(centroRaw).trim();
+              const partes = centroOriginal.split('\\');
+              const centroNombre = partes[0]?.trim() || centroOriginal;
+              mapaTemp.set(prodNorm, {
+                centro: centroOriginal,
+                centroNombre,
+                familia,
+                productoOriginal: String(productoRaw).trim()
+              });
+              Data.familiasSet.add(familia);
+              Data.centrosSet.add(centroNombre);
+            }
+
+            // --- Captura de stock real ---
+            // Prioridad: columna "StockReal" > columna "Existencia"
+            if (idxStockReal >= 0) {
+              const stockReal = parseFloat(row[idxStockReal]);
+              if (!isNaN(stockReal)) {
+                // El archivo de stock suele tener varias filas por producto;
+                // el último valor positivo de StockReal representa el stock final.
+                // Por eso, para cada producto guardamos el máximo valor positivo.
+                const anterior = stockTemp.get(prodNorm) || 0;
+                if (stockReal > 0 && stockReal > anterior) {
+                  stockTemp.set(prodNorm, stockReal);
+                } else if (stockReal <= 0 && anterior === 0) {
+                  // si no teníamos nada, guardamos 0
+                  stockTemp.set(prodNorm, 0);
                 }
+              }
+            } else if (idxExistencia >= 0) {
+              // Fallback a Existencia si no hay StockReal
+              const existencia = parseFloat(row[idxExistencia]);
+              if (!isNaN(existencia) && existencia > 0) {
+                stockTemp.set(prodNorm, (stockTemp.get(prodNorm) || 0) + existencia);
               }
             }
           }
+
+          // Después de procesar todas las filas, nos quedamos con el stock final
           Data.stockDisponible = stockTemp;
+
           resolve(mapaTemp);
-        } catch(err) { reject(err); }
+        } catch (err) {
+          reject(err);
+        }
       };
       reader.onerror = () => reject(new Error('Error al leer stock'));
       reader.readAsArrayBuffer(file);
@@ -98,13 +137,13 @@ const Data = {
             throw new Error('Columnas requeridas: DescArticulo, Fecha, Cantidad');
           }
           const consumos = [];
-          for (let i=1; i<rows.length; i++) {
+          for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
-            if (!row || row.length===0) continue;
+            if (!row || row.length === 0) continue;
             const productoRaw = row[idxProducto];
             const fechaRaw = row[idxFecha];
             const cantidadRaw = row[idxCantidad];
-            if (!productoRaw || !fechaRaw || cantidadRaw===undefined) continue;
+            if (!productoRaw || !fechaRaw || cantidadRaw === undefined) continue;
             const fecha = Utils.parsearFecha(fechaRaw);
             if (!fecha) continue;
             let cantidad = parseFloat(cantidadRaw);
@@ -117,7 +156,9 @@ const Data = {
             });
           }
           resolve(consumos);
-        } catch(err) { reject(err); }
+        } catch (err) {
+          reject(err);
+        }
       };
       reader.onerror = () => reject(new Error('Error al leer remito'));
       reader.readAsArrayBuffer(file);
@@ -128,7 +169,7 @@ const Data = {
     const historico = {};
     for (let r of registros) {
       const año = r.fecha.getFullYear();
-      const mes = String(r.fecha.getMonth()+1).padStart(2,'0');
+      const mes = String(r.fecha.getMonth() + 1).padStart(2, '0');
       const clave = `${año}-${mes}`;
       historico[clave] = (historico[clave] || 0) + r.cantidad;
     }
@@ -143,7 +184,7 @@ const Data = {
       tieneHistorialPorMes[mesNum] = true;
     }
     const promedioPorMes = new Array(13).fill(0);
-    for (let m=1; m<=12; m++) {
+    for (let m = 1; m <= 12; m++) {
       if (conteoPorMes[m] > 0) promedioPorMes[m] = sumaPorMes[m] / conteoPorMes[m];
     }
 
@@ -151,13 +192,16 @@ const Data = {
     let añoActual = hoy.getFullYear();
     let mesActual = hoy.getMonth() + 1;
     const prediccion = [];
-    for (let i=1; i<=mesesPrediccion; i++) {
+    for (let i = 1; i <= mesesPrediccion; i++) {
       let mesPred = mesActual + i;
       let añoPred = añoActual;
-      while (mesPred > 12) { mesPred -= 12; añoPred++; }
+      while (mesPred > 12) {
+        mesPred -= 12;
+        añoPred++;
+      }
       const cantidadPred = tieneHistorialPorMes[mesPred] ? promedioPorMes[mesPred] : 0;
-      const clave = `${añoPred}-${String(mesPred).padStart(2,'0')}`;
-      prediccion.push({ mes: clave, cantidad: Math.round(cantidadPred * 100)/100 });
+      const clave = `${añoPred}-${String(mesPred).padStart(2, '0')}`;
+      prediccion.push({ mes: clave, cantidad: Math.round(cantidadPred * 100) / 100 });
     }
 
     const mesesHistoricos = Object.keys(historico).sort();
