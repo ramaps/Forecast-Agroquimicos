@@ -1,4 +1,6 @@
+// Interfaz de usuario
 const UI = {
+  // Referencias a elementos DOM
   elements: {},
 
   init() {
@@ -128,6 +130,7 @@ const UI = {
     }, 3000);
   },
 
+  // ---------------- TABLA DE PREDICCIÓN (CON CULTIVOS) ----------------
   actualizarTablaPrediccion(prediccion, conteoPorMes) {
     const maxCantidad = Math.max(...prediccion.map(p => p.cantidad), 1);
     const tabla = this.elements.tablaPrediccionBody.closest('table');
@@ -171,11 +174,13 @@ const UI = {
     }
   },
 
-  actualizarSugerenciasCompra(prediccion) {
+  // ---------------- SUGERENCIAS DE COMPRA (conjunto filtrado) ----------------
+  actualizarSugerenciasCompra(prediccion, productosSeleccionados = []) {
     this.elements.sugerenciasBody.innerHTML = '';
+    // Stock disponible SOLO de los productos seleccionados
     let stockTotal = 0;
-    for (let [prod, cantidad] of Data.stockDisponible) {
-      stockTotal += cantidad;
+    for (let prod of productosSeleccionados) {
+      stockTotal += Data.stockDisponible.get(prod) || 0;
     }
     if (stockTotal === 0) {
       this.elements.sugerenciasCompra.classList.add('hidden');
@@ -201,6 +206,7 @@ const UI = {
     }
   },
 
+  // ---------------- CONSTRUIR SELECTORES INICIALES ----------------
   construirSelectoresIniciales() {
     const centros = [...Data.centrosSet].sort();
     this.elements.centroSelector.innerHTML = '<option value="">-- Todos --</option>';
@@ -234,6 +240,7 @@ const UI = {
     this.elements.productoSelector.disabled = true;
   },
 
+  // ---------------- ACTUALIZAR SELECTORES DEPENDIENTES ----------------
   actualizarSelectores() {
     const familia = this.elements.familiaSelector.value;
     const usarActivo = this.elements.toggleActivo.checked;
@@ -288,6 +295,7 @@ const UI = {
     this.elements.productoSelector.disabled = false;
   },
 
+  // ---------------- TEMA CLARO / OSCURO ----------------
   _setupThemeToggle() {
     const applyTheme = (isLight) => {
       document.documentElement.classList.toggle('dark', !isLight);
@@ -308,6 +316,7 @@ const UI = {
     }
   },
 
+  // ---------------- PERSISTENCIA ----------------
   guardarEstado() {
     try {
       const estado = {
