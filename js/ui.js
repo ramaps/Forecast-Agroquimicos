@@ -1,6 +1,4 @@
-// Interfaz de usuario
 const UI = {
-  // Referencias a elementos DOM
   elements: {},
 
   init() {
@@ -88,11 +86,10 @@ const UI = {
     this.elements.infoRemito.innerHTML = '';
   },
 
-  // Vista previa de archivos
   mostrarPreview(container, rows, maxRows = 5) {
     if (!rows || rows.length === 0) return;
     const slice = rows.slice(0, maxRows);
-    let html = '<div class="preview-table mt-2"><table class="w-full text-xs text-slate-400"><thead><tr>';
+    let html = '<div class="preview-table mt-2"><table class="w-full text-xs text-slate-400 dark:text-slate-400"><thead><tr>';
     if (slice[0]) {
       for (let key of Object.keys(slice[0]).slice(0, 5)) {
         html += `<th class="px-2 py-1 text-left">${key}</th>`;
@@ -111,7 +108,6 @@ const UI = {
     container.classList.remove('hidden');
   },
 
-  // Toast notifications
   showToast(message, type = 'info') {
     const colors = {
       info: 'bg-blue-600',
@@ -132,44 +128,51 @@ const UI = {
     }, 3000);
   },
 
-  // Actualizar tabla de predicción con colores condicionales
   actualizarTablaPrediccion(prediccion, conteoPorMes) {
     const maxCantidad = Math.max(...prediccion.map(p => p.cantidad), 1);
+    const tabla = this.elements.tablaPrediccionBody.closest('table');
+    const theadRow = tabla.querySelector('thead tr');
+    // Agregar columna "Cultivos" si no existe
+    if (!theadRow.querySelector('.th-cultivos')) {
+      theadRow.innerHTML += '<th class="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase th-cultivos">Cultivos</th>';
+    }
+
     this.elements.tablaPrediccionBody.innerHTML = '';
     for (let p of prediccion) {
       const [a, mes] = p.mes.split('-');
-      const nombreMes = `${Utils.MESES_NOMBRES[parseInt(mes,10)-1]} ${a}`;
-      const años = conteoPorMes[parseInt(mes,10)] || 0;
-      const ratio = p.cantidad / maxCantidad;
+      const mesNum = parseInt(mes, 10);
+      const nombreMes = `${Utils.MESES_NOMBRES[mesNum - 1]} ${a}`;
+      const años = conteoPorMes[mesNum] || 0;
+      const ratio = maxCantidad > 0 ? p.cantidad / maxCantidad : 0;
       let colorClass = 'text-green-400';
       if (ratio > 0.66) colorClass = 'text-red-400';
       else if (ratio > 0.33) colorClass = 'text-amber-400';
 
-      // Barra de confianza
       const confianzaPct = Math.min(años * 20, 100);
       let confianzaColor = 'bg-red-500';
       if (años >= 3) confianzaColor = 'bg-green-500';
       else if (años >= 2) confianzaColor = 'bg-amber-500';
 
+      const cultivosHtml = Calendario.getCultivosMes(mesNum);
+
       const row = `
         <tr>
-          <td class="px-6 py-3 text-sm text-slate-300">${nombreMes}</td>
+          <td class="px-6 py-3 text-sm text-gray-900 dark:text-slate-300">${nombreMes}</td>
           <td class="px-6 py-3 text-right font-mono ${colorClass}">${p.cantidad.toFixed(2)} lts/kg</td>
-          <td class="px-6 py-3 text-right text-xs text-slate-400">
+          <td class="px-6 py-3 text-right text-xs text-gray-600 dark:text-slate-400">
             <div class="flex items-center justify-end gap-2">
               <div class="confianza-bar w-16"><div class="confianza-bar-fill ${confianzaColor}" style="width:${confianzaPct}%"></div></div>
               <span>${años} año${años!==1?'s':''}</span>
             </div>
           </td>
+          <td class="px-6 py-3 text-xs text-gray-900 dark:text-slate-300">${cultivosHtml}</td>
         </tr>`;
       this.elements.tablaPrediccionBody.insertAdjacentHTML('beforeend', row);
     }
   },
 
-  // Sugerencias de compra
   actualizarSugerenciasCompra(prediccion) {
     this.elements.sugerenciasBody.innerHTML = '';
-    // Buscar stock disponible (acumulado de todos los productos visibles)
     let stockTotal = 0;
     for (let [prod, cantidad] of Data.stockDisponible) {
       stockTotal += cantidad;
@@ -182,25 +185,23 @@ const UI = {
     let acumulado = stockTotal;
     for (let p of prediccion) {
       const [a, mes] = p.mes.split('-');
-      const nombreMes = `${Utils.MESES_NOMBRES[parseInt(mes,10)-1]} ${a}`;
+      const nombreMes = `${Utils.MESES_NOMBRES[parseInt(mes, 10) - 1]} ${a}`;
       acumulado -= p.cantidad;
       const diff = acumulado;
       let diffClass = 'text-green-400';
       if (diff < 0) diffClass = 'text-red-400';
       const row = `
         <tr>
-          <td class="px-6 py-3 text-sm text-slate-300">${nombreMes}</td>
+          <td class="px-6 py-3 text-sm text-gray-900 dark:text-slate-300">${nombreMes}</td>
           <td class="px-6 py-3 text-right font-mono text-blue-300">${p.cantidad.toFixed(2)}</td>
-          <td class="px-6 py-3 text-right font-mono text-slate-400">${stockTotal.toFixed(2)}</td>
+          <td class="px-6 py-3 text-right font-mono text-gray-600 dark:text-slate-400">${stockTotal.toFixed(2)}</td>
           <td class="px-6 py-3 text-right font-mono ${diffClass}">${diff >= 0 ? '+' : ''}${diff.toFixed(2)}</td>
         </tr>`;
       this.elements.sugerenciasBody.insertAdjacentHTML('beforeend', row);
     }
   },
 
-  // Construir selectores iniciales
   construirSelectoresIniciales() {
-    // Centros
     const centros = [...Data.centrosSet].sort();
     this.elements.centroSelector.innerHTML = '<option value="">-- Todos --</option>';
     for (let c of centros) {
@@ -210,7 +211,6 @@ const UI = {
       this.elements.centroSelector.appendChild(opt);
     }
 
-    // Familias
     const familias = [...Data.familiasSet].sort();
     this.elements.familiaSelector.innerHTML = '<option value="">-- Seleccione una familia --</option>';
     for (let f of familias) {
@@ -234,13 +234,11 @@ const UI = {
     this.elements.productoSelector.disabled = true;
   },
 
-  // Actualizar selectores dependientes
   actualizarSelectores() {
     const familia = this.elements.familiaSelector.value;
     const usarActivo = this.elements.toggleActivo.checked;
     const activoSeleccionado = this.elements.activoSelector.value;
 
-    // Activo
     this.elements.activoSelector.innerHTML = '';
     if (!familia) {
       this.elements.activoSelector.innerHTML = '<option value="">-- Filtro de activo desactivado --</option>';
@@ -268,7 +266,6 @@ const UI = {
       }
     }
 
-    // Producto
     this.elements.productoSelector.innerHTML = '';
     if (!familia) {
       this.elements.productoSelector.innerHTML = '<option value="">-- Primero seleccione familia --</option>';
@@ -291,24 +288,26 @@ const UI = {
     this.elements.productoSelector.disabled = false;
   },
 
-  // Tema claro/oscuro
   _setupThemeToggle() {
-    this.elements.themeToggle.addEventListener('click', () => {
-      document.body.classList.toggle('light');
-      const isLight = document.body.classList.contains('light');
+    const applyTheme = (isLight) => {
+      document.documentElement.classList.toggle('dark', !isLight);
       this.elements.themeIcon.textContent = isLight ? '🌙' : '☀️';
-      // Persistir
       localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    };
+
+    this.elements.themeToggle.addEventListener('click', () => {
+      const isLight = !document.documentElement.classList.contains('dark');
+      applyTheme(isLight);
     });
-    // Cargar tema guardado
+
     const saved = localStorage.getItem('theme');
     if (saved === 'light') {
-      document.body.classList.add('light');
-      this.elements.themeIcon.textContent = '🌙';
+      applyTheme(true);
+    } else {
+      applyTheme(false);
     }
   },
 
-  // Persistencia en localStorage
   guardarEstado() {
     try {
       const estado = {
