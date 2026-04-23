@@ -17,14 +17,6 @@
       Data.mapeoProducto = mapa;
       UI.elements.infoStock.innerHTML = `✅ Stock cargado: ${mapa.size} productos agroquímicos.`;
       UI.habilitarRemito();
-      // Vista previa
-      const previewData = [];
-      let count = 0;
-      for (let [prod, info] of Data.mapeoProducto) {
-        if (count++ >= 5) break;
-        previewData.push({ Producto: prod, Familia: info.familia, Centro: info.centroNombre });
-      }
-      UI.mostrarPreview(UI.elements.previewStock, previewData);
     } catch(err) {
       UI.elements.infoStock.innerHTML = `❌ Error: ${err.message}`;
       UI.showToast(err.message, 'error');
@@ -95,11 +87,10 @@
     }
 
     const series = Data.obtenerSeriesPorProductos(productosSeleccionados);
-    // *** PASAR productosSeleccionados para que las sugerencias usen el mismo conjunto ***
     Charts.actualizarGraficoPrincipal(series, titulo, subtitulo, productosSeleccionados);
   });
 
-  // Exportar CSV (ahora incluye Cultivos)
+  // Exportar CSV (incluye Cultivos)
   UI.elements.exportarCsvBtn.addEventListener('click', () => {
     if (UI.elements.tablaPrediccionBody.rows.length === 0) {
       UI.showToast(Utils.t('alertNoData'), 'warning');
@@ -111,16 +102,14 @@
       const cols = row.querySelectorAll('td');
       const mes = cols[0].innerText;
       const cantidad = cols[1].innerText.replace(' lts/kg','');
-      // La tercera columna (confianza) contiene un div con barra y un span al final con el texto
       const confianzaSpan = cols[2].querySelector('span:last-child');
       const confianza = confianzaSpan ? confianzaSpan.innerText.trim() : '';
-      // Cuarta columna: cultivos (puede contener HTML con título en el span)
       const cultivosCell = cols[3];
       let cultivosText = '';
       if (cultivosCell) {
         const titleEl = cultivosCell.querySelector('[title]');
         if (titleEl) {
-          cultivosText = titleEl.getAttribute('title'); // texto completo del tooltip
+          cultivosText = titleEl.getAttribute('title');
         } else {
           cultivosText = cultivosCell.innerText.replace(/\n/g,' ').trim();
         }
@@ -161,14 +150,6 @@
         infoText += ` ⚠️ ${noEncontrados.size} productos del remito no tienen correspondencia en el stock: ${[...noEncontrados].slice(0,5).join(', ')}${noEncontrados.size>5?'...':''}`;
       }
       UI.elements.infoRemito.innerHTML = infoText;
-
-      const previewData = [];
-      let count = 0;
-      for (let [prod, regs] of Data.consumosPorProducto) {
-        if (count++ >= 5) break;
-        previewData.push({ Producto: prod, Registros: regs.length, Total: Utils.formatNumber(regs.reduce((s,r) => s + r.cantidad, 0)) });
-      }
-      UI.mostrarPreview(UI.elements.previewRemito, previewData);
 
       UI.showLoading(Utils.t('loadingCalc'));
       Data.asignarActivosAutomaticos();
