@@ -1,6 +1,4 @@
-// Interfaz de usuario
 const UI = {
-  // Referencias a elementos DOM
   elements: {},
 
   init() {
@@ -130,17 +128,27 @@ const UI = {
     }, 3000);
   },
 
-  // ---------------- TABLA DE PREDICCIÓN (CON CULTIVOS) ----------------
   actualizarTablaPrediccion(prediccion, conteoPorMes) {
-    const maxCantidad = Math.max(...prediccion.map(p => p.cantidad), 1);
     const tabla = this.elements.tablaPrediccionBody.closest('table');
     const theadRow = tabla.querySelector('thead tr');
-    // Agregar columna "Cultivos" si no existe
     if (!theadRow.querySelector('.th-cultivos')) {
       theadRow.innerHTML += '<th class="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase th-cultivos">Cultivos</th>';
     }
 
     this.elements.tablaPrediccionBody.innerHTML = '';
+
+    if (!prediccion || prediccion.length === 0) {
+      const colspan = theadRow.querySelectorAll('th').length || 4;
+      const row = `<tr><td colspan="${colspan}" class="px-6 py-8 text-center text-slate-400">
+        <span class="text-2xl block mb-2">📊</span>
+        Sin datos de predicción para la selección actual.<br>
+        <span class="text-xs">Verifique los filtros o el archivo de remitos.</span>
+      </td></tr>`;
+      this.elements.tablaPrediccionBody.innerHTML = row;
+      return;
+    }
+
+    const maxCantidad = Math.max(...prediccion.map(p => p.cantidad), 1);
     for (let p of prediccion) {
       const [a, mes] = p.mes.split('-');
       const mesNum = parseInt(mes, 10);
@@ -174,10 +182,14 @@ const UI = {
     }
   },
 
-  // ---------------- SUGERENCIAS DE COMPRA (conjunto filtrado) ----------------
   actualizarSugerenciasCompra(prediccion, productosSeleccionados = []) {
     this.elements.sugerenciasBody.innerHTML = '';
-    // Stock disponible SOLO de los productos seleccionados
+
+    if (!prediccion || prediccion.length === 0 || !productosSeleccionados || productosSeleccionados.length === 0) {
+      this.elements.sugerenciasCompra.classList.add('hidden');
+      return;
+    }
+
     let stockTotal = 0;
     for (let prod of productosSeleccionados) {
       stockTotal += Data.stockDisponible.get(prod) || 0;
@@ -187,6 +199,7 @@ const UI = {
       return;
     }
     this.elements.sugerenciasCompra.classList.remove('hidden');
+
     let acumulado = stockTotal;
     for (let p of prediccion) {
       const [a, mes] = p.mes.split('-');
@@ -206,7 +219,6 @@ const UI = {
     }
   },
 
-  // ---------------- CONSTRUIR SELECTORES INICIALES ----------------
   construirSelectoresIniciales() {
     const centros = [...Data.centrosSet].sort();
     this.elements.centroSelector.innerHTML = '<option value="">-- Todos --</option>';
@@ -240,7 +252,6 @@ const UI = {
     this.elements.productoSelector.disabled = true;
   },
 
-  // ---------------- ACTUALIZAR SELECTORES DEPENDIENTES ----------------
   actualizarSelectores() {
     const familia = this.elements.familiaSelector.value;
     const usarActivo = this.elements.toggleActivo.checked;
@@ -295,10 +306,13 @@ const UI = {
     this.elements.productoSelector.disabled = false;
   },
 
-  // ---------------- TEMA CLARO / OSCURO ----------------
   _setupThemeToggle() {
     const applyTheme = (isLight) => {
+      // Alternar clase dark en html (para Tailwind)
       document.documentElement.classList.toggle('dark', !isLight);
+      // Alternar clase light en body (para nuestras reglas personalizadas)
+      document.body.classList.toggle('light', isLight);
+      // Icono
       this.elements.themeIcon.textContent = isLight ? '🌙' : '☀️';
       localStorage.setItem('theme', isLight ? 'light' : 'dark');
     };
@@ -308,15 +322,15 @@ const UI = {
       applyTheme(isLight);
     });
 
+    // Al cargar, si hay tema guardado lo aplicamos, si no, oscuro
     const saved = localStorage.getItem('theme');
     if (saved === 'light') {
       applyTheme(true);
     } else {
-      applyTheme(false);
+      applyTheme(false); // fuerza oscuro
     }
   },
 
-  // ---------------- PERSISTENCIA ----------------
   guardarEstado() {
     try {
       const estado = {
