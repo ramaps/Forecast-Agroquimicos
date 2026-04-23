@@ -99,20 +99,33 @@
     Charts.actualizarGraficoPrincipal(series, titulo, subtitulo, productosSeleccionados);
   });
 
-  // Exportar CSV
+  // Exportar CSV (ahora incluye Cultivos)
   UI.elements.exportarCsvBtn.addEventListener('click', () => {
     if (UI.elements.tablaPrediccionBody.rows.length === 0) {
       UI.showToast(Utils.t('alertNoData'), 'warning');
       return;
     }
-    let csv = Utils.t('csvExport') + '\n';
+    let csv = 'Mes,Cantidad estimada (lts/kg),Años con datos,Cultivos\n';
     const filas = UI.elements.tablaPrediccionBody.querySelectorAll('tr');
     filas.forEach(row => {
       const cols = row.querySelectorAll('td');
       const mes = cols[0].innerText;
       const cantidad = cols[1].innerText.replace(' lts/kg','');
-      const confianza = cols[2].querySelector('span')?.innerText || '';
-      csv += `"${mes}",${cantidad},"${confianza}"\n`;
+      // La tercera columna (confianza) contiene un div con barra y un span al final con el texto
+      const confianzaSpan = cols[2].querySelector('span:last-child');
+      const confianza = confianzaSpan ? confianzaSpan.innerText.trim() : '';
+      // Cuarta columna: cultivos (puede contener HTML con título en el span)
+      const cultivosCell = cols[3];
+      let cultivosText = '';
+      if (cultivosCell) {
+        const titleEl = cultivosCell.querySelector('[title]');
+        if (titleEl) {
+          cultivosText = titleEl.getAttribute('title'); // texto completo del tooltip
+        } else {
+          cultivosText = cultivosCell.innerText.replace(/\n/g,' ').trim();
+        }
+      }
+      csv += `"${mes}",${cantidad},"${confianza}","${cultivosText}"\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
