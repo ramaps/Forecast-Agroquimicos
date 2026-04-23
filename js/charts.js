@@ -4,7 +4,8 @@ const Charts = {
   distribucionFamiliaChart: null,
   distribucionActivoChart: null,
 
-  actualizarGraficoPrincipal(series, titulo, subtitulo) {
+  // -------------------- GRÁFICO PRINCIPAL (línea) --------------------
+  actualizarGraficoPrincipal(series, titulo, subtitulo, productosSeleccionados = []) {
     if (!series) {
       UI.showToast('No hay datos suficientes para mostrar', 'warning');
       return;
@@ -83,13 +84,14 @@ const Charts = {
     document.getElementById('chartTitle').innerHTML = `<span class="w-1.5 h-5 bg-blue-500 rounded-full"></span> ${titulo}`;
     document.getElementById('chartSubtitle').textContent = subtitulo;
 
-    // Actualizar tabla
+    // Actualizar tabla (con cultivos)
     UI.actualizarTablaPrediccion(prediccion, conteoPorMes);
     
-    // Actualizar sugerencias de compra
-    UI.actualizarSugerenciasCompra(prediccion);
+    // Actualizar sugerencias de compra PASANDO los productos seleccionados
+    UI.actualizarSugerenciasCompra(prediccion, productosSeleccionados);
   },
 
+  // -------------------- GRÁFICOS DE DISTRIBUCIÓN --------------------
   actualizarGraficosDistribucion() {
     this._actualizarDistribucionFamilia();
     this._actualizarDistribucionActivo();
