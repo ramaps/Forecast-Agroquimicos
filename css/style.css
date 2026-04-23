@@ -31,76 +31,95 @@ canvas {
   border-radius: 10px;
 }
 
-/* Tema claro */
+/* --------------------------------------------------------------------- */
+/* TEMA CLARO                                                              */
+/* --------------------------------------------------------------------- */
+
 body.light {
   background-color: #f1f5f9;
   color: #1e293b;
 }
 
-body.light .card {
-  background-color: #ffffff;
-  border-color: #e2e8f0;
+/* Tarjetas y contenedores principales */
+body.light .card,
+body.light .bg-\[\#1a2333\] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
 }
 
+/* Área de carga */
 body.light .upload-area {
   background-color: #f8fafc !important;
   border-color: #cbd5e1 !important;
 }
-
 body.light .upload-area.dragover {
   background-color: #dbeafe !important;
   border-color: #3b82f6 !important;
 }
 
+/* Selects e inputs */
 body.light select,
 body.light input {
-  background-color: #f8fafc;
+  background-color: #ffffff;
   border-color: #cbd5e1;
   color: #1e293b;
 }
 
+/* Tablas */
 body.light table {
   color: #1e293b;
 }
-
 body.light th {
-  color: #64748b;
+  color: #475569;
 }
-
 body.light td {
-  color: #334155;
+  color: #1e293b;
 }
 
+/* Encabezado de tabla con fondo oscuro (modo claro lo aclaramos) */
 body.light .bg-\[\#0f172a\]\/80 {
-  background-color: #f1f5f9;
+  background-color: #f1f5f9 !important;
 }
 
+/* Divisores de tabla */
 body.light .divide-slate-700\/50 > :not([hidden]) ~ :not([hidden]) {
   border-color: #e2e8f0;
 }
 
-/* Toast */
-.toast {
-  animation: slideIn 0.3s ease-out;
+/* Colores de texto para cantidad (verde, ámbar, rojo) en tema claro */
+body.light .text-green-400 {
+  color: #16a34a !important;
+}
+body.light .text-amber-400 {
+  color: #d97706 !important;
+}
+body.light .text-red-400 {
+  color: #dc2626 !important;
 }
 
-@keyframes slideIn {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+/* Barra de confianza en tema claro */
+body.light .confianza-bar {
+  background-color: #e2e8f0;
 }
-
-/* Barra de confianza */
 .confianza-bar {
   height: 6px;
   border-radius: 3px;
   background: #334155;
   overflow: hidden;
 }
-
 .confianza-bar-fill {
   height: 100%;
   border-radius: 3px;
   transition: width 0.3s ease;
+}
+
+/* Toast */
+.toast {
+  animation: slideIn 0.3s ease-out;
+}
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
 }
 
 /* Vista previa */
@@ -109,11 +128,10 @@ body.light .divide-slate-700\/50 > :not([hidden]) ~ :not([hidden]) {
   overflow-y: auto;
 }
 
-/* Select con búsqueda */
+/* Select con búsqueda (si se usa) */
 .select-search {
   position: relative;
 }
-
 .select-search input {
   width: 100%;
   padding: 0.75rem;
@@ -121,4 +139,9 @@ body.light .divide-slate-700\/50 > :not([hidden]) ~ :not([hidden]) {
   border: 1px solid #475569;
   border-radius: 0.75rem;
   color: #e2e8f0;
+}
+body.light .select-search input {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #1e293b;
 }
