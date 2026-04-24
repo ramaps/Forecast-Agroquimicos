@@ -262,8 +262,8 @@ const UI = {
 
   // -------------------- CLIMA --------------------
   async fetchWeather() {
-    const lat = -28.9833;
-    const lon = -62.2667;
+    const lat = -28.8858842;
+    const lon = -62.2663477;
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`;
     try {
       const res = await fetch(url);
