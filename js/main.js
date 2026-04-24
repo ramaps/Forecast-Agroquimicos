@@ -90,43 +90,107 @@
     UI.showToast('Predicción actualizada', 'success');
   });
 
-  // Exportar CSV
+  // ---------- EXPORTAR A EXCEL ----------
   if (UI.elements.exportarCsvBtn) {
     UI.elements.exportarCsvBtn.addEventListener('click', () => {
       if (UI.elements.tablaPrediccionBody.rows.length === 0) {
         UI.showToast('Sin datos para exportar', 'warning');
         return;
       }
-      let csv = 'Mes,Cantidad estimada (lts/kg),Años con datos,Cultivos\n';
+
+      // Construir matriz de datos para Excel
       const filas = UI.elements.tablaPrediccionBody.querySelectorAll('tr');
+      const datos = [];
+
+      // Cabecera
+      datos.push(['Mes', 'Cantidad estimada (lts/kg)', 'Años con datos', 'Cultivos']);
+
       filas.forEach(row => {
         const cols = row.querySelectorAll('td');
-        const mes = cols[0].innerText;
-        const cantidad = cols[1].innerText.replace(' lts/kg','');
+        if (cols.length < 4) return;
+        const mes = cols[0].innerText.trim();
+        const cantidad = cols[1].innerText.replace(' lts/kg', '').trim();
         const confianzaSpan = cols[2]?.querySelector('span:last-child');
         const confianza = confianzaSpan ? confianzaSpan.innerText.trim() : '';
+        let cultivos = '';
         const cultivosCell = cols[3];
-        let cultivosText = '';
         if (cultivosCell) {
           const titleEl = cultivosCell.querySelector('[title]');
-          cultivosText = titleEl ? titleEl.getAttribute('title') : cultivosCell.innerText.trim();
+          cultivos = titleEl ? titleEl.getAttribute('title') : cultivosCell.innerText.trim();
         }
-        csv += `"${mes}",${cantidad},"${confianza}","${cultivosText}"\n`;
+        datos.push([mes, cantidad, confianza, cultivos]);
       });
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'prediccion_agroquimicos.csv';
-      a.click();
-      URL.revokeObjectURL(url);
-      UI.showToast('CSV exportado correctamente', 'success');
+
+      // Crear libro y hoja
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(datos);
+      XLSX.utils.book_append_sheet(wb, ws, 'Predicción');
+
+      // Descargar
+      XLSX.writeFile(wb, 'prediccion_agroquimicos.xlsx');
+      UI.showToast('Excel exportado correctamente', 'success');
     });
   }
 
-  // Exportar PDF (vía impresión)
+  // ---------- EXPORTAR A PDF OPTIMIZADO ----------
   if (UI.elements.exportarPdfBtn) {
     UI.elements.exportarPdfBtn.addEventListener('click', () => {
+      // Insertar estilos de impresión A4 sin cortes
+      const styleId = 'print-optimized-styles';
+      if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+          @media print {
+            @page {
+              size: A4;
+              margin: 15mm;
+            }
+            body {
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            /* Ocultar elementos que no se imprimen */
+            #sidebar, #hamburgerBtn, #toastContainer, .btn, button,
+            #dropZoneStock, #dropZoneRemito, #loadingMessage, .no-print {
+              display: none !important;
+            }
+            /* Evitar cortes dentro de tarjetas y filas de tabla */
+            .card, .kpi-card, .chart-container, table {
+              break-inside: avoid;
+              page-break-inside: avoid;
+            }
+            tr {
+              page-break-inside: avoid;
+              break-inside: avoid;
+            }
+            thead {
+              display: table-header-group;
+            }
+            /* Asegurar que las secciones no queden partidas */
+            .section {
+              page-break-before: auto;
+              page-break-after: auto;
+            }
+            .section:not(:first-of-type) {
+              page-break-before: always;
+            }
+            /* Ajustar ancho para que entre en A4 */
+            .max-w-7xl {
+              max-width: 100% !important;
+              padding: 0 !important;
+            }
+            /* Permitir que los gráficos se escalen */
+            canvas {
+              max-width: 100% !important;
+              height: auto !important;
+            }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+
+      // Imprimir
       window.print();
     });
   }
