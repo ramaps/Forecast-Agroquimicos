@@ -15,7 +15,6 @@ const Charts = {
       document.getElementById('chartSubtitle').textContent = 'No se encontraron consumos para la selección actual.';
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       UI.actualizarTablaPrediccion([], []);
-      UI.actualizarSugerenciasCompra([], []);
       return;
     }
 
@@ -25,7 +24,6 @@ const Charts = {
       document.getElementById('chartSubtitle').textContent = 'No se pudo calcular la predicción.';
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       UI.actualizarTablaPrediccion([], []);
-      UI.actualizarSugerenciasCompra([], []);
       return;
     }
 
@@ -43,24 +41,71 @@ const Charts = {
       return p ? p.cantidad : null;
     });
 
-    const isDark = document.documentElement.classList.contains('dark');
-    Chart.defaults.color = isDark ? '#cbd5e1' : '#334155';
-    Chart.defaults.borderColor = isDark ? '#334155' : '#e2e8f0';
+    // Configuración de colores para tema oscuro SaaS
+    Chart.defaults.color = '#fff';
+    Chart.defaults.borderColor = 'rgba(255,255,255,0.1)';
 
     this.chartInstance = new Chart(ctx, {
       type: 'line',
       data: {
         labels: labels,
         datasets: [
-          { label: 'Consumo real', data: datosReales, borderColor: '#60a5fa', borderWidth: 3, pointBackgroundColor: '#60a5fa', pointBorderColor: '#0f172a', tension: 0.2, fill: false },
-          { label: `Predicción (${prediccion.length} meses)`, data: datosEstimados, borderColor: '#fbbf24', borderWidth: 3, borderDash: [6,4], pointBackgroundColor: '#fbbf24', pointBorderColor: '#0f172a', tension: 0.2, fill: false }
+          { 
+            label: 'Consumo real', 
+            data: datosReales, 
+            borderColor: '#60a5fa', 
+            borderWidth: 3, 
+            pointBackgroundColor: '#60a5fa', 
+            pointBorderColor: '#000', 
+            tension: 0.4, 
+            pointRadius: 0, 
+            pointHoverRadius: 6, 
+            fill: true,
+            backgroundColor: 'rgba(96, 165, 250, 0.05)'
+          },
+          { 
+            label: `Predicción (${prediccion.length} meses)`, 
+            data: datosEstimados, 
+            borderColor: '#fbbf24', 
+            borderWidth: 3, 
+            borderDash: [6,4], 
+            pointBackgroundColor: '#fbbf24', 
+            pointBorderColor: '#000', 
+            tension: 0.4, 
+            pointRadius: 0, 
+            pointHoverRadius: 6, 
+            fill: true,
+            backgroundColor: 'rgba(251, 191, 36, 0.05)'
+          }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw !== null ? ctx.raw.toFixed(2) : '-'} lts/kg (${ctx.dataset.label.includes('Predicción') ? 'Estimado' : 'Real'})` } } },
-        scales: { y: { beginAtZero: true, grid: { color: isDark ? '#334155' : '#e2e8f0' }, title: { text: 'Cantidad (lts/kg)', color: isDark ? '#94a3b8' : '#64748b' } }, x: { ticks: { color: isDark ? '#cbd5e1' : '#475569' } } }
+        plugins: {
+          legend: {
+            labels: {
+              color: '#fff'
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${ctx.raw !== null ? ctx.raw.toFixed(2) : '-'} lts/kg`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { color: '#888' },
+            title: { display: true, text: 'Cantidad (lts/kg)', color: '#888' }
+          },
+          x: {
+            ticks: { color: '#888' },
+            grid: { color: 'rgba(255,255,255,0.05)' }
+          }
+        }
       }
     });
 
@@ -68,7 +113,6 @@ const Charts = {
     document.getElementById('chartSubtitle').textContent = subtitulo;
 
     UI.actualizarTablaPrediccion(prediccion, conteoPorMes);
-    UI.actualizarSugerenciasCompra(prediccion, productosSeleccionados);
   },
 
   actualizarGraficosDistribucion() {
@@ -92,11 +136,23 @@ const Charts = {
     const sorted = [...consumoPorFamilia.entries()].sort((a,b) => b[1] - a[1]);
     const labels = sorted.map(e => e[0]);
     const data = sorted.map(e => e[1]);
-    const isDark = document.documentElement.classList.contains('dark');
+
+    Chart.defaults.color = '#fff';
+    Chart.defaults.borderColor = 'rgba(255,255,255,0.1)';
+
     this.distribucionFamiliaChart = new Chart(ctx, {
       type: 'doughnut',
-      data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#60a5fa','#34d399','#fbbf24','#f87171','#a78bfa','#f472b6','#38bdf8','#fb923c'] }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: isDark ? '#cbd5e1' : '#334155', padding: 15 } } } }
+      data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#60a5fa','#34d399','#fbbf24','#f87171','#a78bfa','#f472b6','#38bdf8','#fb923c'], borderColor: 'rgba(0,0,0,0.3)' }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: '#fff', padding: 15 }
+          }
+        }
+      }
     });
   },
 
@@ -116,11 +172,28 @@ const Charts = {
     const sorted = [...consumoPorActivo.entries()].sort((a,b) => b[1] - a[1]).slice(0, 10);
     const labels = sorted.map(e => e[0]);
     const data = sorted.map(e => e[1]);
-    const isDark = document.documentElement.classList.contains('dark');
+
+    Chart.defaults.color = '#fff';
+    Chart.defaults.borderColor = 'rgba(255,255,255,0.1)';
+
     this.distribucionActivoChart = new Chart(ctx, {
       type: 'bar',
-      data: { labels: labels, datasets: [{ label: 'Consumo (lts/kg)', data: data, backgroundColor: '#34d399' }] },
-      options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { color: isDark ? '#334155' : '#e2e8f0' }, ticks: { color: isDark ? '#cbd5e1' : '#475569' } }, y: { ticks: { color: isDark ? '#cbd5e1' : '#475569' } } } }
+      data: { labels: labels, datasets: [{ label: 'Consumo (lts/kg)', data: data, backgroundColor: '#34d399', borderColor: 'rgba(0,0,0,0.3)' }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { color: '#888' }
+          },
+          y: {
+            ticks: { color: '#888' }
+          }
+        }
+      }
     });
   }
 };

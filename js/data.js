@@ -1,4 +1,4 @@
-// Manejo de datos: carga de archivos, estructuras, predicción
+// Manejo de datos: carga de archivos, estructuras, predicción mejorada
 const Data = {
   mapeoProducto: new Map(),
   consumosPorProducto: new Map(),
@@ -39,7 +39,6 @@ const Data = {
           const idxProducto = headers.findIndex(h => h.includes('descarticulo'));
           const idxCentro = headers.findIndex(h => h.includes('desccentrooperativo'));
 
-          // Buscar columnas de stock confiables (primero StockReal, después Existencia)
           const idxStockReal = headers.findIndex(h => h.includes('stockreal'));
           const idxExistencia = headers.findIndex(h => h.includes('existencia'));
 
@@ -48,7 +47,7 @@ const Data = {
           }
 
           const mapaTemp = new Map();
-          const stockTemp = new Map();   // aquí juntaremos el stock final
+          const stockTemp = new Map();
 
           for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
@@ -66,7 +65,6 @@ const Data = {
 
             const prodNorm = Utils.normalizar(productoRaw);
 
-            // Almacenar info del producto (solo primera vez)
             if (!mapaTemp.has(prodNorm)) {
               const centroOriginal = String(centroRaw).trim();
               const partes = centroOriginal.split('\\');
@@ -81,24 +79,17 @@ const Data = {
               Data.centrosSet.add(centroNombre);
             }
 
-            // --- Captura de stock real ---
-            // Prioridad: columna "StockReal" > columna "Existencia"
             if (idxStockReal >= 0) {
               const stockReal = parseFloat(row[idxStockReal]);
               if (!isNaN(stockReal)) {
-                // El archivo de stock suele tener varias filas por producto;
-                // el último valor positivo de StockReal representa el stock final.
-                // Por eso, para cada producto guardamos el máximo valor positivo.
                 const anterior = stockTemp.get(prodNorm) || 0;
                 if (stockReal > 0 && stockReal > anterior) {
                   stockTemp.set(prodNorm, stockReal);
                 } else if (stockReal <= 0 && anterior === 0) {
-                  // si no teníamos nada, guardamos 0
                   stockTemp.set(prodNorm, 0);
                 }
               }
             } else if (idxExistencia >= 0) {
-              // Fallback a Existencia si no hay StockReal
               const existencia = parseFloat(row[idxExistencia]);
               if (!isNaN(existencia) && existencia > 0) {
                 stockTemp.set(prodNorm, (stockTemp.get(prodNorm) || 0) + existencia);
@@ -106,9 +97,7 @@ const Data = {
             }
           }
 
-          // Después de procesar todas las filas, nos quedamos con el stock final
           Data.stockDisponible = stockTemp;
-
           resolve(mapaTemp);
         } catch (err) {
           reject(err);
@@ -165,7 +154,9 @@ const Data = {
     });
   },
 
+  // ---------- PREDICCIÓN MEJORADA (media ponderada por año) ----------
   predecirMensual(registros, mesesPrediccion = 12) {
+    // Agrupar por mes-año
     const historico = {};
     for (let r of registros) {
       const año = r.fecha.getFullYear();
@@ -174,18 +165,39 @@ const Data = {
       historico[clave] = (historico[clave] || 0) + r.cantidad;
     }
 
-    const tieneHistorialPorMes = new Array(13).fill(false);
-    const sumaPorMes = new Array(13).fill(0);
-    const conteoPorMes = new Array(13).fill(0);
-    for (let [key, val] of Object.entries(historico)) {
-      const mesNum = parseInt(key.split('-')[1], 10);
-      sumaPorMes[mesNum] += val;
-      conteoPorMes[mesNum] += 1;
-      tieneHistorialPorMes[mesNum] = true;
+    // Determinar años presentes y año actual
+    const añosSet = new Set();
+    for (let key of Object.keys(historico)) {
+      const año = parseInt(key.split('-')[0], 10);
+      añosSet.add(año);
     }
-    const promedioPorMes = new Array(13).fill(0);
+    const años = [...añosSet].sort();
+    if (años.length === 0) return { historico: [], prediccion: [], conteoPorMes: [] };
+
+    const añoMax = Math.max(...años);
+    const añoMin = Math.min(...años);
+
+    // Para cada mes (1-12), calcular promedio ponderado por año
+    const sumaPesoPorMes = new Array(13).fill(0);
+    const pesoPorMes = new Array(13).fill(0);
+    const conteoPorMes = new Array(13).fill(0);
+
+    // Factor de decaimiento: cada año retrocediendo pesa 0.7 respecto al anterior
+    for (let [key, cantidad] of Object.entries(historico)) {
+      const [añoStr, mesStr] = key.split('-');
+      const año = parseInt(añoStr, 10);
+      const mesNum = parseInt(mesStr, 10);
+      const peso = Math.pow(0.7, añoMax - año); // último año pesa 1, anterior 0.7, 0.49...
+      sumaPesoPorMes[mesNum] += cantidad * peso;
+      pesoPorMes[mesNum] += peso;
+      conteoPorMes[mesNum] += 1;
+    }
+
+    const promedioPonderadoPorMes = new Array(13).fill(0);
     for (let m = 1; m <= 12; m++) {
-      if (conteoPorMes[m] > 0) promedioPorMes[m] = sumaPorMes[m] / conteoPorMes[m];
+      if (pesoPorMes[m] > 0) {
+        promedioPonderadoPorMes[m] = sumaPesoPorMes[m] / pesoPorMes[m];
+      }
     }
 
     const hoy = new Date();
@@ -199,7 +211,7 @@ const Data = {
         mesPred -= 12;
         añoPred++;
       }
-      const cantidadPred = tieneHistorialPorMes[mesPred] ? promedioPorMes[mesPred] : 0;
+      const cantidadPred = promedioPonderadoPorMes[mesPred];
       const clave = `${añoPred}-${String(mesPred).padStart(2, '0')}`;
       prediccion.push({ mes: clave, cantidad: Math.round(cantidadPred * 100) / 100 });
     }
@@ -233,7 +245,135 @@ const Data = {
     return this.predecirMensual(todosRegistros, UI.getMesesPrediccion());
   },
 
-  // Extracción de activos
+  // ---------- COBERTURA DE STOCK ----------
+  calcularCoberturaStock(productosSeleccionados) {
+    let stockTotal = 0;
+    let consumoTotal = 0;
+    let consumoMeses = 0;
+
+    // Calcular consumo promedio mensual de los últimos 12 meses (o histórico)
+    const hoy = new Date();
+    const unAñoAtras = new Date(hoy.getFullYear() - 1, hoy.getMonth(), 1);
+    for (let prod of productosSeleccionados) {
+      stockTotal += Data.stockDisponible.get(prod) || 0;
+      const regs = Data.consumosPorProducto.get(prod) || [];
+      for (let r of regs) {
+        if (r.fecha >= unAñoAtras) {
+          consumoTotal += r.cantidad;
+          consumoMeses = Math.max(consumoMeses, 12); // en realidad no es exacto pero simplifica
+        }
+      }
+    }
+
+    // Consumo promedio mensual
+    const consumoPromedioMensual = consumoTotal / 12; // asumiendo 12 meses
+    const coberturaMeses = consumoPromedioMensual > 0 ? stockTotal / consumoPromedioMensual : Infinity;
+
+    return {
+      stockTotal,
+      consumoPromedioMensual,
+      coberturaMeses: isFinite(coberturaMeses) ? Math.round(coberturaMeses * 10) / 10 : 999,
+      semaforo: coberturaMeses >= 3 ? 'verde' : (coberturaMeses >= 1.5 ? 'amarillo' : 'rojo'),
+      descripcion: coberturaMeses >= 3 ? 'Stock suficiente' : (coberturaMeses >= 1.5 ? 'Precaución' : 'Reponer urgente')
+    };
+  },
+
+  // ---------- INSIGHTS AUTOMÁTICOS ----------
+  generarInsights() {
+    const insights = [];
+    const ahora = new Date();
+    const añoActual = ahora.getFullYear();
+    const añoAnterior = añoActual - 1;
+
+    // 1. Productos con mayor consumo total
+    const consumoTotalPorProducto = new Map();
+    for (let [prod, regs] of Data.consumosPorProducto) {
+      let total = 0;
+      for (let r of regs) total += r.cantidad;
+      consumoTotalPorProducto.set(prod, total);
+    }
+    const topConsumo = [...consumoTotalPorProducto.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+    
+    if (topConsumo.length > 0) {
+      insights.push({
+        tipo: 'info',
+        mensaje: `Los productos más consumidos son: ${topConsumo.map(p => p[0]).join(', ')}.`
+      });
+    }
+
+    // 2. Tendencias: comparar consumo año actual vs anterior
+    const consumoPorAño = new Map();
+    for (let [prod, regs] of Data.consumosPorProducto) {
+      for (let r of regs) {
+        const año = r.fecha.getFullYear();
+        if (!consumoPorAño.has(año)) consumoPorAño.set(año, new Map());
+        const porActivo = consumoPorAño.get(año);
+        const activo = Data.productoAActivos.get(prod) || 'Sin activo';
+        porActivo.set(activo, (porActivo.get(activo) || 0) + r.cantidad);
+      }
+    }
+
+    const añoActualMap = consumoPorAño.get(añoActual) || new Map();
+    const añoAnteriorMap = consumoPorAño.get(añoAnterior) || new Map();
+
+    // Encontrar activos con mayor crecimiento
+    const crecimientos = [];
+    for (let [activo, consumoActual] of añoActualMap) {
+      const consumoAnterior = añoAnteriorMap.get(activo) || 0;
+      if (consumoAnterior > 0) {
+        const crecimiento = ((consumoActual - consumoAnterior) / consumoAnterior) * 100;
+        crecimientos.push({ activo, crecimiento });
+      }
+    }
+    const topCrecimiento = crecimientos
+      .filter(c => c.crecimiento > 20)
+      .sort((a, b) => b.crecimiento - a.crecimiento)
+      .slice(0, 3);
+    if (topCrecimiento.length > 0) {
+      insights.push({
+        tipo: 'success',
+        mensaje: `Activos en crecimiento: ${topCrecimiento.map(c => `${c.activo} (+${Math.round(c.crecimiento)}%)`).join(', ')}.`
+      });
+    }
+
+    // Activos en declive
+    const decrecimientos = crecimientos.filter(c => c.crecimiento < -20);
+    if (decrecimientos.length > 0) {
+      insights.push({
+        tipo: 'warning',
+        mensaje: `Activos en declive: ${decrecimientos.map(c => `${c.activo} (${Math.round(c.crecimiento)}%)`).join(', ')}.`
+      });
+    }
+
+    // 3. Cobertura de stock crítica global
+    let productosBajaCobertura = 0;
+    let productosSinStock = 0;
+    for (let [prod, stock] of Data.stockDisponible) {
+      if (stock <= 0) productosSinStock++;
+      else {
+        const cobertura = this.calcularCoberturaStock([prod]);
+        if (cobertura.semaforo === 'rojo') productosBajaCobertura++;
+      }
+    }
+    if (productosSinStock > 0) {
+      insights.push({
+        tipo: 'error',
+        mensaje: `${productosSinStock} productos sin stock. Se requiere reposición inmediata.`
+      });
+    }
+    if (productosBajaCobertura > 0) {
+      insights.push({
+        tipo: 'warning',
+        mensaje: `${productosBajaCobertura} productos con cobertura menor a 1.5 meses. Priorice la compra.`
+      });
+    }
+
+    return insights;
+  },
+
+  // Extracción de activos (se mantiene igual)
   extraerActivosDeNombre(nombreOriginal) {
     const nombre = String(nombreOriginal).trim();
     const resultados = new Set();
@@ -314,7 +454,6 @@ const Data = {
     }
   },
 
-  // Obtener consumo total
   getConsumoTotal() {
     let total = 0;
     for (let regs of Data.consumosPorProducto.values()) {

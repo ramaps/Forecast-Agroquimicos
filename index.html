@@ -3,213 +3,368 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-  <title>Forecast Agroquímicos · Activos automáticos</title>
+  <title>Forecast Agroquímicos · Agro</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' }</script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="bg-[#0b1120] text-slate-200 font-sans antialiased transition-colors duration-300">
+<body class="bg-black text-white font-sans antialiased">
 
-<div class="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
-  <div class="max-w-7xl mx-auto">
-    
-    <!-- Header -->
-    <div class="mb-10">
-      <div class="flex items-center justify-between gap-3 mb-2">
-        <div class="flex items-center gap-3">
-          <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <span class="text-2xl">🌿</span>
-          </div>
-          <h1 class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-            Forecast de Compras · Agroquímicos
-          </h1>
+<div class="flex h-screen overflow-hidden">
+  
+  <!-- SIDEBAR -->
+  <aside class="w-64 bg-[#0a0a0a] border-r border-white/10 flex flex-col">
+    <div class="p-6">
+      <div class="flex items-center gap-3 mb-8">
+        <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 2C8 6 6 10 6 14a6 6 0 0012 0c0-4-2-8-6-12z"/>
+            <circle cx="12" cy="14" r="2"/>
+            <path d="M12 6v2M12 16v2M6 12h2M16 12h2"/>
+          </svg>
         </div>
-        <button id="themeToggle" class="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition" title="Cambiar tema">
-          <span id="themeIcon" class="text-xl">☀️</span>
+        <h2 class="text-lg font-semibold tracking-tight text-white">Forecast</h2>
+      </div>
+      
+      <nav class="space-y-1">
+        <!-- Botón Dashboard con clase nav-item y active -->
+        <button id="navDashboard" class="nav-item active">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M3 13h8V3H3v10zM13 21h8v-6h-8v6zM13 3v8h8V3h-8zM3 21h8v-4H3v4z"/>
+          </svg>
+          Dashboard
         </button>
+        <!-- Botón Análisis con clase nav-item (sin active) -->
+        <button id="navAnalisis" class="nav-item">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M3 3v18h18M7 15l3-3 3 3 5-5"/>
+          </svg>
+          Análisis Avanzado
+        </button>
+      </nav>
+    </div>
+    
+    <!-- Clima en sidebar -->
+    <div class="mt-auto p-4 border-t border-white/10">
+      <div id="weatherWidget" class="flex items-center gap-2 text-sm p-2 rounded-lg text-white">
+        <span id="weatherIcon">
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>
+          </svg>
+        </span>
+        <div class="leading-tight">
+          <span id="weatherTemp" class="font-semibold">--°C</span>
+          <span id="weatherDesc" class="text-xs text-gray-400 ml-1">Cargando…</span>
+        </div>
       </div>
-      <p class="text-slate-400 mt-2 text-sm md:text-base max-w-3xl">
-        Cargue <strong>stock</strong> y <strong>remitos</strong>. Los <strong>principios activos</strong> se detectan automáticamente.<br>
-        Predicción solo en meses con uso histórico. Filtre por familia, activo y producto.
-      </p>
     </div>
 
-    <!-- Carga de archivos -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-      <div class="bg-[#1a2333] rounded-2xl shadow-xl border border-slate-700/50 overflow-hidden card">
-        <div class="p-6">
-          <h2 class="text-lg font-semibold mb-3 flex items-center gap-2"><span class="text-blue-400">📦 1.</span> Archivo STOCK</h2>
-          <div id="dropZoneStock" class="upload-area border-2 border-dashed border-slate-600 rounded-xl p-6 text-center cursor-pointer bg-[#0f172a]/50 hover:bg-[#1e293b]">
+            <!-- Radio Aspen (minimalista) -->
+        <div class="mt-3 flex items-center justify-between px-2 text-xs text-white/60">
+          <div class="flex items-center gap-2 cursor-pointer hover:text-white transition" id="radioBtn">
+            <svg id="radioIcon" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 3l14 9-14 9V3z"/>
+            </svg>
+            <span>Aspen</span>
+          </div>
+          <span id="radioStatus" class="text-green-400 text-[10px] hidden">●</span>
+        </div>
+        <audio id="radioPlayer" src="https://playerservices.streamtheworld.com/api/livestream-redirect/ASPENAAC.aac"></audio>
+
+  </aside>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 flex flex-col overflow-hidden">
+    
+    <!-- HEADER -->
+    <header class="bg-[#0a0a0a] border-b border-white/10 px-6 py-4 flex items-center justify-between">
+      <div>
+        <h1 id="headerTitle" class="text-xl font-semibold text-white">Dashboard Ejecutivo</h1>
+        <p id="headerSubtitle" class="text-xs text-gray-400">Resumen general del sistema</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="text-right">
+          <div id="currentTime" class="text-lg font-mono font-semibold tracking-wider text-white">--:--:--</div>
+          <div id="currentDate" class="text-xs text-gray-400">---, -- de ----</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ÁREA DESPLEGABLE (contenido dinámico) -->
+    <div class="flex-1 overflow-auto p-6">
+      
+      <!-- Carga de archivos -->
+      <div id="uploadSection" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="bg-[#111] rounded-2xl border border-white/10 p-4 card">
+          <h2 class="text-sm font-semibold mb-2 flex items-center gap-2 text-white">
+            <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8m18 0a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2m18 0s-4 2-9 2-9-2-9-2m9-2h.01"/>
+            </svg>
+            STOCK
+          </h2>
+          <div id="dropZoneStock" class="upload-area border-2 border-dashed border-white/10 rounded-lg p-4 text-center cursor-pointer bg-[#1a1a1a] hover:bg-[#222]">
             <input type="file" id="fileStock" accept=".xlsx, .xls" class="hidden" />
-            <div><span class="text-4xl block mb-2">📂</span><p class="text-slate-200">Cargar <span class="text-blue-400">stock de productos adn.xlsx</span></p><p class="text-xs text-slate-500">Solo productos con "AGROQUIMICOS" en DescCentroOperativo</p></div>
+            <svg class="mx-auto w-8 h-8 text-blue-400 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="12" y1="18" x2="12" y2="12"/>
+              <line x1="9" y1="15" x2="15" y2="15"/>
+            </svg>
+            <p class="text-white text-sm">Cargar <span class="text-blue-400">stock de productos</span></p>
           </div>
-          <div id="infoStock" class="mt-2 text-sm text-slate-400"></div>
+          <div id="infoStock" class="mt-1 text-xs text-gray-400"></div>
         </div>
-      </div>
-      <div class="bg-[#1a2333] rounded-2xl shadow-xl border border-slate-700/50 overflow-hidden card">
-        <div class="p-6">
-          <h2 class="text-lg font-semibold mb-3 flex items-center gap-2"><span class="text-orange-400">📋 2.</span> Archivo REMITOS</h2>
-          <div id="dropZoneRemito" class="upload-area border-2 border-dashed border-slate-600 rounded-xl p-6 text-center cursor-pointer bg-[#0f172a]/50 opacity-50 pointer-events-none" style="opacity:0.5; pointer-events:none;">
+        <div class="bg-[#111] rounded-2xl border border-white/10 p-4 card">
+          <h2 class="text-sm font-semibold mb-2 flex items-center gap-2 text-white">
+            <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M9 12h6m-3-3v6m7 5H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4l2 2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"/>
+            </svg>
+            REMITOS
+          </h2>
+          <div id="dropZoneRemito" class="upload-area border-2 border-dashed border-white/10 rounded-lg p-4 text-center cursor-pointer bg-[#1a1a1a] opacity-50 pointer-events-none" style="opacity:0.5; pointer-events:none;">
             <input type="file" id="fileRemito" accept=".xlsx, .xls" class="hidden" disabled />
-            <div><span class="text-4xl block mb-2">⏳</span><p class="text-slate-400">Primero cargue el archivo de STOCK</p></div>
+            <svg class="mx-auto w-8 h-8 text-gray-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <p class="text-gray-500 text-sm">Primero cargue el archivo de STOCK</p>
           </div>
-          <div id="infoRemito" class="mt-2 text-sm text-slate-400"></div>
+          <div id="infoRemito" class="mt-1 text-xs text-gray-400"></div>
         </div>
       </div>
-    </div>
 
-    <!-- Loading -->
-    <div id="loadingMessage" class="hidden text-center py-12">
-      <div class="inline-flex flex-col items-center px-6 py-3 rounded-full bg-blue-900/30 border border-blue-500/30 text-blue-300">
-        <svg class="animate-spin h-8 w-8 mb-2 text-blue-400" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-        <span id="loadingText">Procesando datos...</span>
+      <!-- Loading -->
+      <div id="loadingMessage" class="hidden text-center py-8">
+        <div class="inline-flex flex-col items-center px-6 py-3 rounded-full bg-white/5 border border-white/10 text-blue-300">
+          <svg class="animate-spin h-8 w-8 mb-2 text-blue-400" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span id="loadingText">Procesando datos...</span>
+        </div>
       </div>
-    </div>
 
-    <!-- KPIs -->
-    <div id="kpiSection" class="hidden grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-      <div class="bg-[#1a2333] rounded-2xl shadow-xl border border-slate-700/50 p-4 text-center card">
-        <div class="text-3xl font-bold text-blue-400" id="kpiProductos">0</div>
-        <div class="text-xs text-slate-400 uppercase mt-1">Productos</div>
-      </div>
-      <div class="bg-[#1a2333] rounded-2xl shadow-xl border border-slate-700/50 p-4 text-center card">
-        <div class="text-3xl font-bold text-emerald-400" id="kpiFamilias">0</div>
-        <div class="text-xs text-slate-400 uppercase mt-1">Familias</div>
-      </div>
-      <div class="bg-[#1a2333] rounded-2xl shadow-xl border border-slate-700/50 p-4 text-center card">
-        <div class="text-3xl font-bold text-amber-400" id="kpiActivos">0</div>
-        <div class="text-xs text-slate-400 uppercase mt-1">Activos Detectados</div>
-      </div>
-      <div class="bg-[#1a2333] rounded-2xl shadow-xl border border-slate-700/50 p-4 text-center card">
-        <div class="text-3xl font-bold text-purple-400" id="kpiConsumoTotal">0</div>
-        <div class="text-xs text-slate-400 uppercase mt-1">Consumo Total (lts/kg)</div>
-      </div>
-    </div>
-
-    <!-- Contenido principal -->
-    <div id="mainContent" class="hidden space-y-8">
-      <!-- Filtros -->
-      <div class="bg-[#1a2333] rounded-2xl shadow-xl border border-slate-700/50 p-5 sm:p-6 card">
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-slate-300 font-medium text-sm uppercase tracking-wider mb-2">Centro Operativo</label>
-            <select id="centroSelector" class="w-full p-3 bg-[#0f172a] border border-slate-600 rounded-xl text-slate-200 focus:ring-2 focus:ring-blue-500/50">
-              <option value="">-- Todos --</option>
-            </select>
+      <!-- ==================== PANEL DASHBOARD ==================== -->
+      <div id="panelDashboard" class="hidden space-y-6">
+        
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <!-- Consumo (neutro) -->
+          <div class="kpi-card">
+            <svg class="w-5 h-5 text-white/60 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <div class="kpi-value text-white" id="kpiConsumoMes">0</div>
+            <div class="kpi-label">Consumo Mensual (prom.)</div>
           </div>
-          <div>
-            <label class="block text-slate-300 font-medium text-sm uppercase tracking-wider mb-2">Familia</label>
-            <select id="familiaSelector" class="w-full p-3 bg-[#0f172a] border border-slate-600 rounded-xl text-slate-200 focus:ring-2 focus:ring-blue-500/50">
-              <option value="">-- Seleccione una familia --</option>
-            </select>
+          <!-- Stock (neutro) -->
+          <div class="kpi-card">
+            <svg class="w-5 h-5 text-white/60 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+            <div class="kpi-value text-white" id="kpiStockTotal">0</div>
+            <div class="kpi-label">Stock Total</div>
           </div>
-          <div>
-            <div class="flex items-center justify-between mb-2">
-              <label class="text-slate-300 font-medium text-sm uppercase tracking-wider">Principio Activo</label>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="toggleActivo" class="sr-only peer">
-                <div class="w-9 h-5 bg-gray-600 peer-focus:ring-2 peer-focus:ring-green-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-green-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
-                <span class="ml-2 text-xs text-slate-400">Activar</span>
-              </label>
+          <!-- Cobertura (dinámico) -->
+          <div class="kpi-card">
+            <svg class="w-5 h-5 text-white/60 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <div class="kpi-value" id="kpiCoberturaMeses">0</div>
+            <div class="kpi-label">Cobertura (meses)</div>
+          </div>
+          <!-- Riesgo (siempre rojo) -->
+          <div class="kpi-card">
+            <svg class="w-5 h-5 text-red-400 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <div class="kpi-value text-red-400" id="kpiProductosRiesgo">0</div>
+            <div class="kpi-label">Productos en Riesgo</div>
+          </div>
+        </div>
+
+        <!-- Semáforo de Cobertura Global -->
+        <div class="bg-[#111] rounded-2xl border border-white/10 p-5 card">
+          <h2 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 8v4l2 2"/>
+            </svg>
+            Semáforo de Cobertura
+          </h2>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="semaforo-card green border-green-500/30">
+              <div class="text-2xl font-bold text-green-400" id="countOk">0</div>
+              <div class="text-xs text-gray-400">Stock OK</div>
             </div>
-            <select id="activoSelector" class="w-full p-3 bg-[#0f172a] border border-slate-600 rounded-xl text-slate-200 focus:ring-2 focus:ring-green-500/50" disabled>
-              <option value="">-- Filtro de activo desactivado --</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-slate-300 font-medium text-sm uppercase tracking-wider mb-2">Producto (opcional)</label>
-            <select id="productoSelector" class="w-full p-3 bg-[#0f172a] border border-slate-600 rounded-xl text-slate-200 focus:ring-2 focus:ring-blue-500/50" disabled>
-              <option value="">-- Primero seleccione familia --</option>
-            </select>
+            <div class="semaforo-card yellow border-amber-500/30">
+              <div class="text-2xl font-bold text-amber-400" id="countWarning">0</div>
+              <div class="text-xs text-gray-400">Precaución</div>
+            </div>
+            <div class="semaforo-card red border-red-500/30">
+              <div class="text-2xl font-bold text-red-400" id="countCritical">0</div>
+              <div class="text-xs text-gray-400">Crítico</div>
+            </div>
           </div>
         </div>
-        <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <label class="text-slate-300 text-sm">Meses a predecir:</label>
-            <select id="mesesPrediccionSelector" class="p-2 bg-[#0f172a] border border-slate-600 rounded-lg text-slate-200 text-sm">
-              <option value="3">3 meses</option>
-              <option value="6">6 meses</option>
-              <option value="12" selected>12 meses</option>
-              <option value="24">24 meses</option>
-            </select>
-          </div>
-          <button id="verGraficoBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition">Ver gráfico</button>
-        </div>
-      </div>
 
-      <!-- Gráfico principal -->
-      <div class="bg-[#1a2333] rounded-2xl shadow-xl border border-slate-700/50 p-5 sm:p-6 card">
-        <h2 class="text-xl font-semibold text-slate-100 mb-1 flex items-center gap-2" id="chartTitle">
-          <span class="w-1.5 h-5 bg-blue-500 rounded-full"></span> Consumo mensual
-        </h2>
-        <p class="text-sm text-slate-400 mb-5" id="chartSubtitle"></p>
-        <div class="relative w-full" style="height: 360px;">
-          <canvas id="consumoChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Gráfico de distribución -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-[#1a2333] rounded-2xl shadow-xl border border-slate-700/50 p-5 sm:p-6 card">
-          <h2 class="text-lg font-semibold text-slate-100 mb-3">Distribución por Familia</h2>
-          <div class="relative w-full" style="height: 300px;">
-            <canvas id="distribucionFamiliaChart"></canvas>
+        <!-- Productos Críticos + Acciones -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-[#111] rounded-2xl border border-white/10 p-5 card">
+            <h2 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+              <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M12 9v2m0 4h.01M21 12a9 9 0 1 0-18 0 9 9 0 0 0 18 0z"/>
+              </svg>
+              Productos Críticos
+            </h2>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-white/10">
+                <thead><tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Producto</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-400 uppercase">Stock</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-400 uppercase">Cobertura</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-400 uppercase">Estado</th></tr></thead>
+                <tbody id="productosCriticosBody" class="divide-y divide-white/10"></tbody>
+              </table>
+            </div>
           </div>
-        </div>
-        <div class="bg-[#1a2333] rounded-2xl shadow-xl border border-slate-700/50 p-5 sm:p-6 card">
-          <h2 class="text-lg font-semibold text-slate-100 mb-3">Distribución por Activo (Top 10)</h2>
-          <div class="relative w-full" style="height: 300px;">
-            <canvas id="distribucionActivoChart"></canvas>
+          <div class="bg-[#111] rounded-2xl border border-white/10 p-5 card">
+            <h2 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+              <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-1.35 2.7a1 1 0 0 0 .9 1.3h10.9a1 1 0 0 0 .9-1.3L17 13M6 21h12M9 21v-4m6 4v-4"/>
+              </svg>
+              Acciones Recomendadas
+            </h2>
+            <div id="accionesRecomendadas" class="space-y-3"></div>
           </div>
         </div>
       </div>
 
-      <!-- Sugerencias de compra -->
-      <div id="sugerenciasCompra" class="hidden bg-[#1a2333] rounded-2xl shadow-xl border border-slate-700/50 overflow-hidden card">
-        <div class="px-6 py-5 border-b border-slate-700/50">
-          <h2 class="text-lg font-semibold text-slate-100">🛒 Sugerencias de Compra</h2>
-          <p class="text-sm text-slate-400">Comparación entre predicción y stock actual</p>
+      <!-- ==================== PANEL ANÁLISIS AVANZADO ==================== -->
+      <div id="panelAnalisis" class="hidden space-y-6">
+        
+        <!-- Filtros -->
+        <div class="bg-[#111] rounded-2xl border border-white/10 p-5 card">
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-gray-400 text-xs uppercase mb-1">Centro</label>
+              <div id="centroSelector" class="select-search"></div>
+            </div>
+            <div>
+              <label class="block text-gray-400 text-xs uppercase mb-1">Familia</label>
+              <div id="familiaSelector" class="select-search"></div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-gray-400 text-xs uppercase">Activo</label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="toggleActivo" class="sr-only peer">
+                  <div class="w-8 h-4 bg-gray-600 peer-focus:ring-2 peer-focus:ring-green-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-green-600 after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all"></div>
+                </label>
+              </div>
+              <div id="activoSelector" class="select-search"></div>
+            </div>
+            <div>
+              <label class="block text-gray-400 text-xs uppercase mb-1">Producto</label>
+              <div id="productoSelector" class="select-search"></div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between gap-3 mt-4">
+            <div class="flex items-center gap-2">
+              <label class="text-gray-400 text-xs">Meses:</label>
+              <select id="mesesPrediccionSelector" class="p-1 bg-[#1a1a1a] border border-white/10 rounded text-white text-xs">
+                <option value="3">3</option>
+                <option value="6">6</option>
+                <option value="12" selected>12</option>
+                <option value="24">24</option>
+              </select>
+            </div>
+            <button id="verGraficoBtn" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-xs font-medium transition flex items-center gap-2 text-white">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <polyline points="1 4 1 20 23 20"/>
+                <path d="M3 16l4-4 4 4 6-6"/>
+              </svg>
+              Actualizar
+            </button>
+          </div>
         </div>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-700/50">
-            <thead><tr class="bg-[#0f172a]/80"><th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Mes</th><th class="px-6 py-3 text-right text-xs font-medium text-slate-400 uppercase">Predicción</th><th class="px-6 py-3 text-right text-xs font-medium text-slate-400 uppercase">Stock Disponible</th><th class="px-6 py-3 text-right text-xs font-medium text-slate-400 uppercase">Diferencia</th></tr></thead>
-            <tbody id="sugerenciasBody" class="divide-y divide-slate-700/50"></tbody>
-          </table>
+
+        <!-- Gráfico principal -->
+        <div class="bg-[#111] rounded-2xl border border-white/10 p-5 card">
+          <h3 class="text-sm font-semibold text-white mb-2" id="chartTitle">Consumo mensual</h3>
+          <p id="chartSubtitle" class="text-xs text-gray-400 mb-3"></p>
+          <div class="relative w-full" style="height: 350px;">
+            <canvas id="consumoChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Distribuciones -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-[#111] rounded-2xl border border-white/10 p-5 card">
+            <h3 class="text-sm font-semibold text-white mb-2">Distribución por Familia</h3>
+            <div class="relative w-full" style="height: 250px;">
+              <canvas id="distribucionFamiliaChart"></canvas>
+            </div>
+          </div>
+          <div class="bg-[#111] rounded-2xl border border-white/10 p-5 card">
+            <h3 class="text-sm font-semibold text-white mb-2">Distribución por Activo (Top 10)</h3>
+            <div class="relative w-full" style="height: 250px;">
+              <canvas id="distribucionActivoChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de predicción + exportar -->
+        <div class="bg-[#111] rounded-2xl border border-white/10 p-5 card">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-white">Predicción Mes a Mes</h3>
+            <div class="flex gap-2">
+              <button id="exportarPdfBtn" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded-lg text-xs font-medium transition flex items-center gap-1 text-white">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                PDF
+              </button>
+              <button id="exportarCsvBtn" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-xs font-medium transition flex items-center gap-1 text-white">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="8" y1="13" x2="16" y2="13"/>
+                  <line x1="8" y1="17" x2="16" y2="17"/>
+                  <line x1="10" y1="9" x2="9" y2="9"/>
+                </svg>
+                CSV
+              </button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-white/10">
+              <thead><tr class="bg-white/5"><th class="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Mes</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-400 uppercase">Cantidad</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-400 uppercase">Confianza</th></tr></thead>
+              <tbody id="tablaPrediccionBody" class="divide-y divide-white/10"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      <!-- Tabla de predicción -->
-      <div class="bg-[#1a2333] rounded-2xl shadow-xl border border-slate-700/50 overflow-hidden card">
-        <div class="px-6 py-5 border-b border-slate-700/50">
-          <h2 class="text-lg font-semibold text-slate-100">📅 Predicción mes a mes</h2>
-          <p class="text-sm text-slate-400">Solo meses con uso histórico → promedio del mismo mes. Meses sin uso → 0.</p>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-700/50">
-            <thead><tr class="bg-[#0f172a]/80"><th class="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase">Mes</th><th class="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase">Cantidad estimada (lts/kg)</th><th class="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase">Confianza</th></tr></thead>
-            <tbody id="tablaPrediccionBody" class="divide-y divide-slate-700/50"></tbody>
-          </table>
-        </div>
-        <div class="mt-4 flex justify-end gap-3 px-6 pb-5">
-          <button id="exportarPdfBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition">
-            📄 Exportar PDF
-          </button>
-          <button id="exportarCsvBtn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm font-medium transition">
-            📥 Exportar CSV
-          </button>
+      <!-- Mensaje sin datos -->
+      <div id="noDataMessage" class="hidden text-center py-16">
+        <div class="inline-flex flex-col items-center bg-[#111] p-8 rounded-2xl border border-white/10">
+          <svg class="w-12 h-12 text-gray-500 mb-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M21 21l-6-6m2-5a7 7 0 1 0-14 0 7 7 0 0 0 14 0z"/>
+            <line x1="10" y1="10" x2="10" y2="10.01"/>
+          </svg>
+          <span class="text-white text-lg">No se encontraron datos de consumo para agroquímicos</span>
         </div>
       </div>
     </div>
-
-    <div id="noDataMessage" class="hidden text-center py-16">
-      <div class="inline-flex flex-col items-center bg-[#1a2333] p-8 rounded-2xl border border-slate-700/50">
-        <span class="text-5xl mb-3">📭</span>
-        <span class="text-slate-300 text-lg">No se encontraron datos de consumo para agroquímicos</span>
-      </div>
-    </div>
-  </div>
+  </main>
 </div>
 
 <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>

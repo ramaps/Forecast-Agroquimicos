@@ -1,8 +1,31 @@
 const UI = {
   elements: {},
 
+  weatherMap: {
+    0:  { icon: '☀️', desc: 'Despejado', class: '' },
+    1:  { icon: '🌤️', desc: 'Mayormente despejado', class: '' },
+    2:  { icon: '⛅', desc: 'Parcialmente nublado', class: 'cloudy' },
+    3:  { icon: '☁️', desc: 'Nublado', class: 'cloudy' },
+    45: { icon: '🌫️', desc: 'Niebla', class: 'cloudy' },
+    48: { icon: '🌫️', desc: 'Niebla', class: 'cloudy' },
+    51: { icon: '🌦️', desc: 'Llovizna ligera', class: 'rainy' },
+    53: { icon: '🌦️', desc: 'Llovizna', class: 'rainy' },
+    55: { icon: '🌧️', desc: 'Llovizna intensa', class: 'rainy' },
+    61: { icon: '🌧️', desc: 'Lluvia ligera', class: 'rainy' },
+    63: { icon: '🌧️', desc: 'Lluvia', class: 'rainy' },
+    65: { icon: '🌧️', desc: 'Lluvia intensa', class: 'rainy' },
+    71: { icon: '❄️', desc: 'Nieve ligera', class: '' },
+    73: { icon: '❄️', desc: 'Nieve', class: '' },
+    75: { icon: '❄️', desc: 'Nieve intensa', class: '' },
+    80: { icon: '🌦️', desc: 'Chubascos', class: 'rainy' },
+    95: { icon: '⛈️', desc: 'Tormenta', class: 'rainy' },
+    96: { icon: '⛈️', desc: 'Tormenta con granizo', class: 'rainy' },
+    99: { icon: '⛈️', desc: 'Tormenta con granizo intenso', class: 'rainy' },
+  },
+
   init() {
     this.elements = {
+      // carga de archivos
       dropStock: document.getElementById('dropZoneStock'),
       inputStock: document.getElementById('fileStock'),
       infoStock: document.getElementById('infoStock'),
@@ -11,13 +34,33 @@ const UI = {
       infoRemito: document.getElementById('infoRemito'),
       loadingMsg: document.getElementById('loadingMessage'),
       loadingText: document.getElementById('loadingText'),
-      mainContent: document.getElementById('mainContent'),
+      uploadSection: document.getElementById('uploadSection'),
       noDataMsg: document.getElementById('noDataMessage'),
-      kpiSection: document.getElementById('kpiSection'),
-      kpiProductos: document.getElementById('kpiProductos'),
-      kpiFamilias: document.getElementById('kpiFamilias'),
-      kpiActivos: document.getElementById('kpiActivos'),
-      kpiConsumoTotal: document.getElementById('kpiConsumoTotal'),
+
+      // KPI
+      kpiConsumoMes: document.getElementById('kpiConsumoMes'),
+      kpiStockTotal: document.getElementById('kpiStockTotal'),
+      kpiCoberturaMeses: document.getElementById('kpiCoberturaMeses'),
+      kpiProductosRiesgo: document.getElementById('kpiProductosRiesgo'),
+
+      // semáforo
+      countOk: document.getElementById('countOk'),
+      countWarning: document.getElementById('countWarning'),
+      countCritical: document.getElementById('countCritical'),
+
+      // productos críticos y acciones
+      productosCriticosBody: document.getElementById('productosCriticosBody'),
+      accionesRecomendadas: document.getElementById('accionesRecomendadas'),
+
+      // paneles y navegación
+      panelDashboard: document.getElementById('panelDashboard'),
+      panelAnalisis: document.getElementById('panelAnalisis'),
+      navDashboard: document.getElementById('navDashboard'),
+      navAnalisis: document.getElementById('navAnalisis'),
+      headerTitle: document.getElementById('headerTitle'),
+      headerSubtitle: document.getElementById('headerSubtitle'),
+
+      // filtros del panel de análisis
       centroSelector: document.getElementById('centroSelector'),
       familiaSelector: document.getElementById('familiaSelector'),
       productoSelector: document.getElementById('productoSelector'),
@@ -26,23 +69,214 @@ const UI = {
       mesesPrediccionSelector: document.getElementById('mesesPrediccionSelector'),
       verGraficoBtn: document.getElementById('verGraficoBtn'),
       tablaPrediccionBody: document.getElementById('tablaPrediccionBody'),
-      sugerenciasCompra: document.getElementById('sugerenciasCompra'),
-      sugerenciasBody: document.getElementById('sugerenciasBody'),
+      chartTitle: document.getElementById('chartTitle'),
+
+      // exportar
       exportarCsvBtn: document.getElementById('exportarCsvBtn'),
       exportarPdfBtn: document.getElementById('exportarPdfBtn'),
-      themeToggle: document.getElementById('themeToggle'),
-      themeIcon: document.getElementById('themeIcon'),
+
+      // clima y reloj
+      weatherWidget: document.getElementById('weatherWidget'),
+      weatherIcon: document.getElementById('weatherIcon'),
+      weatherTemp: document.getElementById('weatherTemp'),
+      weatherDesc: document.getElementById('weatherDesc'),
+      currentTime: document.getElementById('currentTime'),
+      currentDate: document.getElementById('currentDate'),
       toastContainer: document.getElementById('toastContainer'),
     };
-    this._setupThemeToggle();
+
+    // ---------- Navegación del sidebar (solo alterna clase 'active') ----------
+    this.elements.navDashboard.addEventListener('click', () => {
+      this.elements.panelDashboard.classList.remove('hidden');
+      this.elements.panelAnalisis.classList.add('hidden');
+      this.elements.navDashboard.classList.add('active');
+      this.elements.navAnalisis.classList.remove('active');
+      this.elements.headerTitle.textContent = 'Dashboard Ejecutivo';
+      this.elements.headerSubtitle.textContent = 'Resumen general del sistema';
+    });
+
+    this.elements.navAnalisis.addEventListener('click', () => {
+      this.elements.panelDashboard.classList.add('hidden');
+      this.elements.panelAnalisis.classList.remove('hidden');
+      this.elements.navAnalisis.classList.add('active');
+      this.elements.navDashboard.classList.remove('active');
+      this.elements.headerTitle.textContent = 'Análisis Avanzado';
+      this.elements.headerSubtitle.textContent = 'Predicciones, gráficos y exportación de datos';
+    });
+
+    // ---------- Reproductor de radio Aspen ----------
+    (() => {
+      const radioBtn = document.getElementById('radioBtn');
+      const radioPlayer = document.getElementById('radioPlayer');
+      const radioIcon = document.getElementById('radioIcon');
+      const radioStatus = document.getElementById('radioStatus');
+      let radioPlaying = false;
+
+      if (!radioBtn || !radioPlayer || !radioIcon || !radioStatus) return;
+
+      radioBtn.addEventListener('click', () => {
+        if (!radioPlaying) {
+          radioPlayer.play().then(() => {
+            // Pausa icon
+            radioIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+            radioStatus.textContent = '●';
+            radioStatus.classList.remove('hidden');
+          }).catch(() => {
+            radioStatus.textContent = '⚠️';
+            radioStatus.classList.remove('hidden');
+            setTimeout(() => radioStatus.classList.add('hidden'), 2000);
+          });
+        } else {
+          radioPlayer.pause();
+          // Play icon
+          radioIcon.innerHTML = '<path d="M5 3l14 9-14 9V3z"/>';
+          radioStatus.classList.add('hidden');
+        }
+        radioPlaying = !radioPlaying;
+      });
+    })();
+
+    // Reloj y clima
+    this.startClock();
+    this.fetchWeather();
+    setInterval(() => this.startClock(), 1000);
+    setInterval(() => this.fetchWeather(), 600000);
   },
 
+  // -------------------- COMPONENTE SELECT CON BÚSQUEDA --------------------
+  crearSelectBusqueda(contenedor, opciones, placeholder = 'Buscar...', onChange = null) {
+    contenedor.innerHTML = '';
+    contenedor.className = 'select-search relative';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = placeholder;
+    input.className = 'w-full p-2 bg-[#1a1a1a] border border-white/10 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500/50';
+
+    const lista = document.createElement('ul');
+    lista.className = 'absolute z-20 mt-1 w-full bg-[#1a1a1a] border border-white/10 rounded-lg max-h-48 overflow-y-auto hidden text-sm';
+
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.value = '';
+    contenedor.appendChild(hiddenInput);
+    contenedor.appendChild(input);
+    contenedor.appendChild(lista);
+
+    let opcionesArray = opciones;
+    let valorSeleccionado = '';
+
+    const renderLista = (filtro = '') => {
+      lista.innerHTML = '';
+      const filtradas = opcionesArray.filter(opt =>
+        opt.texto.toLowerCase().includes(filtro.toLowerCase())
+      );
+      if (filtradas.length === 0) {
+        lista.innerHTML = '<li class="px-3 py-2 text-gray-500 text-xs">Sin resultados</li>';
+        lista.classList.remove('hidden');
+        return;
+      }
+      filtradas.forEach(opt => {
+        const li = document.createElement('li');
+        li.className = 'px-3 py-2 cursor-pointer hover:bg-white/10 text-white text-sm';
+        li.textContent = opt.texto;
+        li.addEventListener('click', () => {
+          input.value = opt.texto;
+          hiddenInput.value = opt.valor;
+          valorSeleccionado = opt.valor;
+          lista.classList.add('hidden');
+          if (onChange) onChange(opt.valor);
+          hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        lista.appendChild(li);
+      });
+      lista.classList.remove('hidden');
+    };
+
+    input.addEventListener('focus', () => renderLista(input.value));
+    input.addEventListener('input', () => renderLista(input.value));
+
+    document.addEventListener('click', (e) => {
+      if (!contenedor.contains(e.target)) lista.classList.add('hidden');
+    });
+
+    contenedor.setOpciones = (nuevasOpciones) => {
+      opcionesArray = nuevasOpciones;
+      input.value = '';
+      hiddenInput.value = '';
+      valorSeleccionado = '';
+    };
+    contenedor.setValue = (valor, texto) => {
+      input.value = texto || '';
+      hiddenInput.value = valor;
+      valorSeleccionado = valor;
+    };
+    contenedor.getValue = () => hiddenInput.value;
+    contenedor.getInput = () => input;
+    contenedor.disable = () => { input.disabled = true; input.placeholder = 'Desactivado'; };
+    contenedor.enable = () => { input.disabled = false; input.placeholder = placeholder; };
+    contenedor.limpiar = () => { input.value = ''; hiddenInput.value = ''; valorSeleccionado = ''; };
+
+    return contenedor;
+  },
+
+  // -------------------- RELOJ --------------------
+  startClock() {
+    const ahora = new Date();
+    const hh = String(ahora.getHours()).padStart(2, '0');
+    const mm = String(ahora.getMinutes()).padStart(2, '0');
+    const ss = String(ahora.getSeconds()).padStart(2, '0');
+    this.elements.currentTime.textContent = `${hh}:${mm}:${ss}`;
+
+    const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    this.elements.currentDate.textContent = `${dias[ahora.getDay()]}, ${ahora.getDate()} de ${meses[ahora.getMonth()]} de ${ahora.getFullYear()}`;
+  },
+
+  // -------------------- CLIMA --------------------
+  async fetchWeather() {
+    const lat = -28.9833;
+    const lon = -62.2667;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Error de red');
+      const data = await res.json();
+      const w = data.current_weather;
+      const code = w.weathercode;
+      const temp = w.temperature;
+      const isDay = w.is_day === 1;
+
+      const info = this.weatherMap[code] || { icon: '❓', desc: 'Desconocido', class: '' };
+      let icon = info.icon;
+      let desc = info.desc;
+
+      if (!isDay && (code === 0 || code === 1)) {
+        icon = '🌙';
+        desc = code === 0 ? 'Despejado (noche)' : 'Mayormente despejado (noche)';
+      }
+
+      this.elements.weatherIcon.textContent = icon;
+      this.elements.weatherTemp.textContent = `${temp}°C`;
+      this.elements.weatherDesc.textContent = desc;
+
+      this.elements.weatherWidget.classList.remove('cloudy', 'rainy');
+      if (info.class) this.elements.weatherWidget.classList.add(info.class);
+    } catch (err) {
+      this.elements.weatherIcon.textContent = '⚠️';
+      this.elements.weatherTemp.textContent = '--°C';
+      this.elements.weatherDesc.textContent = 'Error';
+      this.elements.weatherWidget.classList.remove('cloudy', 'rainy');
+    }
+  },
+
+  // -------------------- MÉTODOS GENERALES --------------------
   getMesesPrediccion() {
     return parseInt(this.elements.mesesPrediccionSelector?.value || '12');
   },
 
   showLoading(text) {
-    this.elements.loadingText.textContent = text || Utils.t('loading');
+    this.elements.loadingText.textContent = text || 'Procesando...';
     this.elements.loadingMsg.classList.remove('hidden');
   },
 
@@ -50,14 +284,13 @@ const UI = {
     this.elements.loadingMsg.classList.add('hidden');
   },
 
-  showMain() {
-    this.elements.mainContent.classList.remove('hidden');
-    this.elements.kpiSection.classList.remove('hidden');
+  showDashboard() {
+    this.elements.panelDashboard.classList.remove('hidden');
   },
 
-  hideMain() {
-    this.elements.mainContent.classList.add('hidden');
-    this.elements.kpiSection.classList.add('hidden');
+  hideDashboard() {
+    this.elements.panelDashboard.classList.add('hidden');
+    this.elements.panelAnalisis.classList.add('hidden');
   },
 
   showNoData() {
@@ -68,13 +301,6 @@ const UI = {
     this.elements.noDataMsg.classList.add('hidden');
   },
 
-  updateKPIs() {
-    this.elements.kpiProductos.textContent = Data.mapeoProducto.size;
-    this.elements.kpiFamilias.textContent = Data.familiasSet.size;
-    this.elements.kpiActivos.textContent = Data.activosSet.size;
-    this.elements.kpiConsumoTotal.textContent = Utils.formatNumber(Data.getConsumoTotal());
-  },
-
   habilitarRemito() {
     const dz = this.elements.dropRemito;
     dz.style.opacity = '1';
@@ -82,28 +308,6 @@ const UI = {
     dz.classList.remove('opacity-50', 'pointer-events-none');
     this.elements.inputRemito.disabled = false;
     this.elements.infoRemito.innerHTML = '';
-  },
-
-  mostrarPreview(container, rows, maxRows = 5) {
-    if (!rows || rows.length === 0) return;
-    const slice = rows.slice(0, maxRows);
-    let html = '<div class="preview-table mt-2"><table class="w-full text-xs text-slate-400 dark:text-slate-400"><thead><tr>';
-    if (slice[0]) {
-      for (let key of Object.keys(slice[0]).slice(0, 5)) {
-        html += `<th class="px-2 py-1 text-left">${key}</th>`;
-      }
-    }
-    html += '</tr></thead><tbody>';
-    for (let row of slice) {
-      html += '<tr>';
-      for (let key of Object.keys(row).slice(0, 5)) {
-        html += `<td class="px-2 py-1">${String(row[key] || '').substring(0, 40)}</td>`;
-      }
-      html += '</tr>';
-    }
-    html += '</tbody></table></div>';
-    container.innerHTML = html;
-    container.classList.remove('hidden');
   },
 
   showToast(message, type = 'info') {
@@ -126,23 +330,193 @@ const UI = {
     }, 3000);
   },
 
+  // -------------------- DASHBOARD EJECUTIVO --------------------
+  actualizarDashboardEjecutivo() {
+    let consumoTotal = 0;
+    const hoy = new Date();
+    const unAñoAtras = new Date(hoy.getFullYear() - 1, hoy.getMonth(), 1);
+    for (let [prod, regs] of Data.consumosPorProducto) {
+      for (let r of regs) {
+        if (r.fecha >= unAñoAtras) consumoTotal += r.cantidad;
+      }
+    }
+    const consumoPromedioMensual = consumoTotal / 12;
+    this.elements.kpiConsumoMes.textContent = Utils.formatNumber(consumoPromedioMensual) + ' L';
+    this.elements.kpiConsumoMes.className = 'kpi-value text-white'; // neutro
+
+    let stockTotal = 0;
+    for (let [prod, stock] of Data.stockDisponible) {
+      stockTotal += stock;
+    }
+    this.elements.kpiStockTotal.textContent = Utils.formatNumber(stockTotal) + ' L';
+    this.elements.kpiStockTotal.className = 'kpi-value text-white'; // neutro
+
+    const coberturaGlobal = consumoPromedioMensual > 0 ? stockTotal / consumoPromedioMensual : 999;
+    this.elements.kpiCoberturaMeses.textContent = coberturaGlobal === 999 ? '∞' : coberturaGlobal.toFixed(1);
+    this.elements.kpiCoberturaMeses.className = 'kpi-value';
+    if (coberturaGlobal >= 3) {
+      this.elements.kpiCoberturaMeses.classList.add('text-green-400');
+    } else if (coberturaGlobal >= 1.5) {
+      this.elements.kpiCoberturaMeses.classList.add('text-amber-400');
+    } else if (coberturaGlobal < 999) {
+      this.elements.kpiCoberturaMeses.classList.add('text-red-400');
+    }
+
+    let riesgoCount = 0;
+    const productosCriticos = [];
+    for (let [prod, stock] of Data.stockDisponible) {
+      const regs = Data.consumosPorProducto.get(prod) || [];
+      let consumoProd = 0;
+      for (let r of regs) {
+        if (r.fecha >= unAñoAtras) consumoProd += r.cantidad;
+      }
+      const consumoPromProd = consumoProd / 12;
+      const coberturaProd = consumoPromProd > 0 ? stock / consumoPromProd : 999;
+      if (coberturaProd < 1.5) {
+        riesgoCount++;
+        productosCriticos.push({ producto: prod, stock, cobertura: coberturaProd.toFixed(1), estado: coberturaProd < 0.5 ? 'Crítico' : 'Precaución' });
+      }
+    }
+    this.elements.kpiProductosRiesgo.textContent = riesgoCount;
+    this.elements.kpiProductosRiesgo.className = 'kpi-value text-red-400'; // siempre rojo
+
+    let ok = 0, warning = 0, critical = 0;
+    for (let [prod, stock] of Data.stockDisponible) {
+      const regs = Data.consumosPorProducto.get(prod) || [];
+      let consumoProd = 0;
+      for (let r of regs) {
+        if (r.fecha >= unAñoAtras) consumoProd += r.cantidad;
+      }
+      const consumoPromProd = consumoProd / 12;
+      const coberturaProd = consumoPromProd > 0 ? stock / consumoPromProd : 999;
+      if (coberturaProd >= 3) ok++;
+      else if (coberturaProd >= 1.5) warning++;
+      else critical++;
+    }
+    this.elements.countOk.textContent = ok;
+    this.elements.countWarning.textContent = warning;
+    this.elements.countCritical.textContent = critical;
+
+    productosCriticos.sort((a, b) => a.cobertura - b.cobertura);
+    const topCriticos = productosCriticos.slice(0, 10);
+    this.elements.productosCriticosBody.innerHTML = '';
+    for (let p of topCriticos) {
+      const colorEstado = p.estado === 'Crítico' ? 'text-red-400' : 'text-amber-400';
+      const row = `
+        <tr>
+          <td class="px-4 py-2 text-sm text-white">${p.producto}</td>
+          <td class="px-4 py-2 text-right font-mono text-sm text-white">${Utils.formatNumber(p.stock)}</td>
+          <td class="px-4 py-2 text-right font-mono text-sm ${colorEstado}">${p.cobertura} m.</td>
+          <td class="px-4 py-2 text-right text-sm ${colorEstado}">${p.estado}</td>
+        </tr>`;
+      this.elements.productosCriticosBody.insertAdjacentHTML('beforeend', row);
+    }
+
+    this.elements.accionesRecomendadas.innerHTML = '';
+    for (let p of topCriticos) {
+      const regs = Data.consumosPorProducto.get(p.producto) || [];
+      const prediccionProd = Data.predecirMensual(regs, 3);
+      const consumo3Meses = prediccionProd.prediccion.reduce((sum, x) => sum + x.cantidad, 0);
+      const margen = consumo3Meses * 0.2;
+      const compraRecomendada = Math.max(0, (consumo3Meses + margen) - p.stock);
+      if (compraRecomendada > 0) {
+        const div = document.createElement('div');
+        div.className = 'flex items-start gap-2 p-3 rounded-lg bg-red-900/20 border border-red-500/20';
+        div.innerHTML = `<span class="text-red-400 text-xl">🛑</span><p class="text-sm text-white">Comprar <strong class="text-white">${compraRecomendada.toFixed(1)} L</strong> de <strong class="text-white">${p.producto}</strong></p>`;
+        this.elements.accionesRecomendadas.appendChild(div);
+      }
+    }
+    if (this.elements.accionesRecomendadas.children.length === 0) {
+      this.elements.accionesRecomendadas.innerHTML = '<p class="text-sm text-green-400">✅ Stock adecuado para todos los productos críticos.</p>';
+    }
+  },
+
+  // -------------------- SELECTORES CON BÚSQUEDA --------------------
+  construirSelectoresIniciales() {
+    const centros = [...Data.centrosSet].sort().map(c => ({ valor: c, texto: c }));
+    this.crearSelectBusqueda(this.elements.centroSelector, [{ valor: '', texto: '-- Todos --' }, ...centros], 'Buscar centro...');
+
+    const familias = [...Data.familiasSet].sort().map(f => ({ valor: f, texto: f }));
+    this.crearSelectBusqueda(this.elements.familiaSelector, [{ valor: '', texto: '-- Seleccione --' }, ...familias], 'Buscar familia...', (valor) => {
+      this.actualizarSelectores();
+    });
+
+    this.crearSelectBusqueda(this.elements.activoSelector, [{ valor: '', texto: '-- Desactivado --' }], 'Buscar activo...');
+    this.elements.activoSelector.disable();
+
+    this.crearSelectBusqueda(this.elements.productoSelector, [{ valor: '', texto: '-- Primero seleccione familia --' }], 'Buscar producto...');
+    this.elements.productoSelector.disable();
+
+    Data.productosPorFamilia.clear();
+    for (let [prod, info] of Data.mapeoProducto) {
+      const fam = info.familia;
+      if (!Data.productosPorFamilia.has(fam)) Data.productosPorFamilia.set(fam, []);
+      Data.productosPorFamilia.get(fam).push(prod);
+    }
+
+    this.elements.toggleActivo.checked = false;
+  },
+
+  actualizarSelectores() {
+    const familia = this.elements.familiaSelector.getValue();
+    const usarActivo = this.elements.toggleActivo.checked;
+    const activoSeleccionado = this.elements.activoSelector.getValue();
+
+    if (!familia) {
+      this.elements.activoSelector.setOpciones([{ valor: '', texto: '-- Desactivado --' }]);
+      this.elements.activoSelector.disable();
+      this.elements.activoSelector.limpiar();
+    } else {
+      const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
+      const activosEnFamilia = new Set();
+      for (let prod of prodsFamilia) {
+        const acts = Data.productoAActivos.get(prod);
+        if (acts) acts.split(',').map(a => Utils.normalizar(a.trim())).forEach(a => activosEnFamilia.add(a));
+      }
+      const opcionesActivo = [{ valor: '', texto: '-- Todos los activos --' }, ...[...activosEnFamilia].sort().map(a => ({ valor: a, texto: a }))];
+      this.elements.activoSelector.setOpciones(opcionesActivo);
+      if (usarActivo) {
+        this.elements.activoSelector.enable();
+        if (activoSeleccionado) {
+          const opcion = opcionesActivo.find(o => o.valor === activoSeleccionado);
+          if (opcion) this.elements.activoSelector.setValue(opcion.valor, opcion.texto);
+        }
+      } else {
+        this.elements.activoSelector.disable();
+        this.elements.activoSelector.limpiar();
+      }
+    }
+
+    if (!familia) {
+      this.elements.productoSelector.setOpciones([{ valor: '', texto: '-- Primero seleccione familia --' }]);
+      this.elements.productoSelector.disable();
+      this.elements.productoSelector.limpiar();
+      return;
+    }
+    const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
+    let productosFiltrados = prodsFamilia;
+    if (usarActivo && activoSeleccionado) {
+      const prodsDelActivo = Data.productosPorActivo.get(activoSeleccionado) || new Set();
+      productosFiltrados = prodsFamilia.filter(p => prodsDelActivo.has(p));
+    }
+    const opcionesProducto = [{ valor: '', texto: '-- Ver todos --' }, ...productosFiltrados.sort().map(p => ({ valor: p, texto: p }))];
+    this.elements.productoSelector.setOpciones(opcionesProducto);
+    this.elements.productoSelector.enable();
+  },
+
+  // -------------------- TABLA DE PREDICCIÓN --------------------
   actualizarTablaPrediccion(prediccion, conteoPorMes) {
     const tabla = this.elements.tablaPrediccionBody.closest('table');
     const theadRow = tabla.querySelector('thead tr');
     if (!theadRow.querySelector('.th-cultivos')) {
-      theadRow.innerHTML += '<th class="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase th-cultivos">Cultivos</th>';
+      theadRow.innerHTML += '<th class="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase th-cultivos">Cultivos</th>';
     }
 
     this.elements.tablaPrediccionBody.innerHTML = '';
 
     if (!prediccion || prediccion.length === 0) {
       const colspan = theadRow.querySelectorAll('th').length || 4;
-      const row = `<tr><td colspan="${colspan}" class="px-6 py-8 text-center text-slate-400">
-        <span class="text-2xl block mb-2">📊</span>
-        Sin datos de predicción para la selección actual.<br>
-        <span class="text-xs">Verifique los filtros o el archivo de remitos.</span>
-      </td></tr>`;
-      this.elements.tablaPrediccionBody.innerHTML = row;
+      this.elements.tablaPrediccionBody.innerHTML = `<tr><td colspan="${colspan}" class="px-4 py-4 text-center text-gray-500">Sin datos</td></tr>`;
       return;
     }
 
@@ -166,166 +540,17 @@ const UI = {
 
       const row = `
         <tr>
-          <td class="px-6 py-3 text-sm text-gray-900 dark:text-slate-300">${nombreMes}</td>
-          <td class="px-6 py-3 text-right font-mono ${colorClass}">${p.cantidad.toFixed(2)} lts/kg</td>
-          <td class="px-6 py-3 text-right text-xs text-gray-600 dark:text-slate-400">
-            <div class="flex items-center justify-end gap-2">
-              <div class="confianza-bar w-16"><div class="confianza-bar-fill ${confianzaColor}" style="width:${confianzaPct}%"></div></div>
+          <td class="px-4 py-2 text-sm text-white">${nombreMes}</td>
+          <td class="px-4 py-2 text-right font-mono ${colorClass}">${p.cantidad.toFixed(2)}</td>
+          <td class="px-4 py-2 text-right text-xs text-gray-400">
+            <div class="flex items-center justify-end gap-1">
+              <div class="confianza-bar w-12"><div class="confianza-bar-fill ${confianzaColor}" style="width:${confianzaPct}%"></div></div>
               <span>${años} año${años!==1?'s':''}</span>
             </div>
           </td>
-          <td class="px-6 py-3 text-xs text-gray-900 dark:text-slate-300">${cultivosHtml}</td>
+          <td class="px-4 py-2 text-xs text-gray-400">${cultivosHtml}</td>
         </tr>`;
       this.elements.tablaPrediccionBody.insertAdjacentHTML('beforeend', row);
-    }
-  },
-
-  actualizarSugerenciasCompra(prediccion, productosSeleccionados = []) {
-    this.elements.sugerenciasBody.innerHTML = '';
-
-    if (!prediccion || prediccion.length === 0 || !productosSeleccionados || productosSeleccionados.length === 0) {
-      this.elements.sugerenciasCompra.classList.add('hidden');
-      return;
-    }
-
-    let stockTotal = 0;
-    for (let prod of productosSeleccionados) {
-      stockTotal += Data.stockDisponible.get(prod) || 0;
-    }
-    if (stockTotal === 0) {
-      this.elements.sugerenciasCompra.classList.add('hidden');
-      return;
-    }
-    this.elements.sugerenciasCompra.classList.remove('hidden');
-
-    let acumulado = stockTotal;
-    for (let p of prediccion) {
-      const [a, mes] = p.mes.split('-');
-      const nombreMes = `${Utils.MESES_NOMBRES[parseInt(mes, 10) - 1]} ${a}`;
-      acumulado -= p.cantidad;
-      const diff = acumulado;
-      let diffClass = 'text-green-400';
-      if (diff < 0) diffClass = 'text-red-400';
-      const row = `
-        <tr>
-          <td class="px-6 py-3 text-sm text-gray-900 dark:text-slate-300">${nombreMes}</td>
-          <td class="px-6 py-3 text-right font-mono text-blue-300">${p.cantidad.toFixed(2)}</td>
-          <td class="px-6 py-3 text-right font-mono text-gray-600 dark:text-slate-400">${stockTotal.toFixed(2)}</td>
-          <td class="px-6 py-3 text-right font-mono ${diffClass}">${diff >= 0 ? '+' : ''}${diff.toFixed(2)}</td>
-        </tr>`;
-      this.elements.sugerenciasBody.insertAdjacentHTML('beforeend', row);
-    }
-  },
-
-  construirSelectoresIniciales() {
-    const centros = [...Data.centrosSet].sort();
-    this.elements.centroSelector.innerHTML = '<option value="">-- Todos --</option>';
-    for (let c of centros) {
-      const opt = document.createElement('option');
-      opt.value = c;
-      opt.textContent = c;
-      this.elements.centroSelector.appendChild(opt);
-    }
-
-    const familias = [...Data.familiasSet].sort();
-    this.elements.familiaSelector.innerHTML = '<option value="">-- Seleccione una familia --</option>';
-    for (let f of familias) {
-      const opt = document.createElement('option');
-      opt.value = f;
-      opt.textContent = f;
-      this.elements.familiaSelector.appendChild(opt);
-    }
-
-    Data.productosPorFamilia.clear();
-    for (let [prod, info] of Data.mapeoProducto) {
-      const fam = info.familia;
-      if (!Data.productosPorFamilia.has(fam)) Data.productosPorFamilia.set(fam, []);
-      Data.productosPorFamilia.get(fam).push(prod);
-    }
-
-    this.elements.toggleActivo.checked = false;
-    this.elements.activoSelector.innerHTML = '<option value="">-- Filtro de activo desactivado --</option>';
-    this.elements.activoSelector.disabled = true;
-    this.elements.productoSelector.innerHTML = '<option value="">-- Primero seleccione familia --</option>';
-    this.elements.productoSelector.disabled = true;
-  },
-
-  actualizarSelectores() {
-    const familia = this.elements.familiaSelector.value;
-    const usarActivo = this.elements.toggleActivo.checked;
-    const activoSeleccionado = this.elements.activoSelector.value;
-
-    this.elements.activoSelector.innerHTML = '';
-    if (!familia) {
-      this.elements.activoSelector.innerHTML = '<option value="">-- Filtro de activo desactivado --</option>';
-      this.elements.activoSelector.disabled = true;
-    } else {
-      const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
-      const activosEnFamilia = new Set();
-      for (let prod of prodsFamilia) {
-        const acts = Data.productoAActivos.get(prod);
-        if (acts) acts.split(',').map(a => Utils.normalizar(a.trim())).forEach(a => activosEnFamilia.add(a));
-      }
-      if (usarActivo) {
-        this.elements.activoSelector.innerHTML = '<option value="">-- Todos los activos de la familia --</option>';
-        for (let act of [...activosEnFamilia].sort()) {
-          const opt = document.createElement('option');
-          opt.value = act;
-          opt.textContent = act;
-          if (act === activoSeleccionado) opt.selected = true;
-          this.elements.activoSelector.appendChild(opt);
-        }
-        this.elements.activoSelector.disabled = false;
-      } else {
-        this.elements.activoSelector.innerHTML = '<option value="">-- Filtro de activo desactivado --</option>';
-        this.elements.activoSelector.disabled = true;
-      }
-    }
-
-    this.elements.productoSelector.innerHTML = '';
-    if (!familia) {
-      this.elements.productoSelector.innerHTML = '<option value="">-- Primero seleccione familia --</option>';
-      this.elements.productoSelector.disabled = true;
-      return;
-    }
-    const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
-    let productosFiltrados = prodsFamilia;
-    if (usarActivo && activoSeleccionado) {
-      const prodsDelActivo = Data.productosPorActivo.get(activoSeleccionado) || new Set();
-      productosFiltrados = prodsFamilia.filter(p => prodsDelActivo.has(p));
-    }
-    this.elements.productoSelector.innerHTML = '<option value="">-- Ver todos los productos (gráfico agregado) --</option>';
-    for (let prod of productosFiltrados.sort()) {
-      const opt = document.createElement('option');
-      opt.value = prod;
-      opt.textContent = prod;
-      this.elements.productoSelector.appendChild(opt);
-    }
-    this.elements.productoSelector.disabled = false;
-  },
-
-  _setupThemeToggle() {
-    const applyTheme = (isLight) => {
-      // Alternar clase dark en html (para Tailwind)
-      document.documentElement.classList.toggle('dark', !isLight);
-      // Alternar clase light en body (para nuestras reglas personalizadas)
-      document.body.classList.toggle('light', isLight);
-      // Icono
-      this.elements.themeIcon.textContent = isLight ? '🌙' : '☀️';
-      localStorage.setItem('theme', isLight ? 'light' : 'dark');
-    };
-
-    this.elements.themeToggle.addEventListener('click', () => {
-      const isLight = !document.documentElement.classList.contains('dark');
-      applyTheme(isLight);
-    });
-
-    // Al cargar, si hay tema guardado lo aplicamos, si no, oscuro
-    const saved = localStorage.getItem('theme');
-    if (saved === 'light') {
-      applyTheme(true);
-    } else {
-      applyTheme(false); // fuerza oscuro
     }
   },
 
