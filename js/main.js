@@ -90,44 +90,135 @@
     UI.showToast('Predicción actualizada', 'success');
   });
 
-  // Exportar CSV
+  // ---------- EXPORTAR A EXCEL ----------
   if (UI.elements.exportarCsvBtn) {
     UI.elements.exportarCsvBtn.addEventListener('click', () => {
       if (UI.elements.tablaPrediccionBody.rows.length === 0) {
         UI.showToast('Sin datos para exportar', 'warning');
         return;
       }
-      let csv = 'Mes,Cantidad estimada (lts/kg),Años con datos,Cultivos\n';
+
+      // Construir matriz de datos para Excel
       const filas = UI.elements.tablaPrediccionBody.querySelectorAll('tr');
+      const datos = [];
+      datos.push(['Mes', 'Cantidad estimada (lts/kg)', 'Años con datos', 'Cultivos']);
+
       filas.forEach(row => {
         const cols = row.querySelectorAll('td');
-        const mes = cols[0].innerText;
-        const cantidad = cols[1].innerText.replace(' lts/kg','');
+        if (cols.length < 4) return;
+        const mes = cols[0].innerText.trim();
+        const cantidad = cols[1].innerText.replace(' lts/kg', '').trim();
         const confianzaSpan = cols[2]?.querySelector('span:last-child');
         const confianza = confianzaSpan ? confianzaSpan.innerText.trim() : '';
+        let cultivos = '';
         const cultivosCell = cols[3];
-        let cultivosText = '';
         if (cultivosCell) {
           const titleEl = cultivosCell.querySelector('[title]');
-          cultivosText = titleEl ? titleEl.getAttribute('title') : cultivosCell.innerText.trim();
+          cultivos = titleEl ? titleEl.getAttribute('title') : cultivosCell.innerText.trim();
         }
-        csv += `"${mes}",${cantidad},"${confianza}","${cultivosText}"\n`;
+        datos.push([mes, cantidad, confianza, cultivos]);
       });
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+
+      // Crear libro y hoja
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(datos);
+      XLSX.utils.book_append_sheet(wb, ws, 'Predicción');
+
+      // Generar archivo binario y descargar
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], { type: 'application/octet-stream' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'prediccion_agroquimicos.csv';
+      a.download = 'prediccion_agroquimicos.xlsx';
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      UI.showToast('CSV exportado correctamente', 'success');
+
+      UI.showToast('Excel exportado correctamente', 'success');
     });
   }
 
-  // Exportar PDF (vía impresión)
+  // ---------- EXPORTAR A PDF OPTIMIZADO ----------
   if (UI.elements.exportarPdfBtn) {
     UI.elements.exportarPdfBtn.addEventListener('click', () => {
+      // 1. Insertar estilos de impresión (solo una vez)
+      const styleId = 'print-optimized-styles';
+      if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+          @media print {
+            @page {
+              size: A4;
+              margin: 15mm;
+            }
+            body {
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            #sidebar, #hamburgerBtn, #toastContainer, .btn, button,
+            #dropZoneStock, #dropZoneRemito, #loadingMessage, .no-print {
+              display: none !important;
+            }
+            .card, .kpi-card, .chart-container, table {
+              break-inside: avoid;
+              page-break-inside: avoid;
+            }
+            tr {
+              page-break-inside: avoid;
+              break-inside: avoid;
+            }
+            thead {
+              display: table-header-group;
+            }
+            .section {
+              page-break-before: auto;
+              page-break-after: auto;
+            }
+            .section:not(:first-of-type) {
+              page-break-before: always;
+            }
+            .max-w-7xl {
+              max-width: 100% !important;
+              padding: 0 !important;
+            }
+            .canvas-img {
+              max-width: 100% !important;
+              height: auto !important;
+            }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+
+      // 2. Reemplazar todos los canvas por imágenes (solo para impresión)
+      const canvases = document.querySelectorAll('canvas');
+      const replacements = []; // { parent, img, originalCanvas }
+
+      canvases.forEach(canvas => {
+        const img = document.createElement('img');
+        img.src = canvas.toDataURL('image/png');
+        img.className = canvas.className + ' canvas-img';
+        img.style.width = canvas.style.width || canvas.width + 'px';
+        img.style.height = canvas.style.height || canvas.height + 'px';
+        img.alt = 'Gráfico';
+
+        const parent = canvas.parentNode;
+        parent.replaceChild(img, canvas);
+        replacements.push({ parent, img, originalCanvas: canvas });
+      });
+
+      // 3. Imprimir
       window.print();
+
+      // 4. Restaurar los canvas originales después de la impresión
+      setTimeout(() => {
+        replacements.forEach(({ parent, img, originalCanvas }) => {
+          parent.replaceChild(originalCanvas, img);
+        });
+      }, 1000);
     });
   }
 
@@ -182,4 +273,5 @@
   if (estado) {
     console.log('Estado anterior:', estado);
   }
+})();
 })();
