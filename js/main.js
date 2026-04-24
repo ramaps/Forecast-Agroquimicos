@@ -119,23 +119,11 @@
         datos.push([mes, cantidad, confianza, cultivos]);
       });
 
-      // Crear libro y hoja
+      // Crear libro y hoja, luego descargar usando writeFile
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet(datos);
       XLSX.utils.book_append_sheet(wb, ws, 'Predicción');
-
-      // Generar archivo binario y descargar
-      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-      const blob = new Blob([wbout], { type: 'application/octet-stream' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'prediccion_agroquimicos.xlsx';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
+      XLSX.writeFile(wb, 'prediccion_agroquimicos.xlsx');
       UI.showToast('Excel exportado correctamente', 'success');
     });
   }
@@ -143,7 +131,7 @@
   // ---------- EXPORTAR A PDF OPTIMIZADO ----------
   if (UI.elements.exportarPdfBtn) {
     UI.elements.exportarPdfBtn.addEventListener('click', () => {
-      // 1. Insertar estilos de impresión (solo una vez)
+      // 1. Insertar estilos de impresión (una sola vez)
       const styleId = 'print-optimized-styles';
       if (!document.getElementById(styleId)) {
         const style = document.createElement('style');
@@ -158,7 +146,7 @@
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
-            #sidebar, #hamburgerBtn, #toastContainer, .btn, button,
+            #sidebar, #hamburgerBtn, #toastContainer, button, .btn,
             #dropZoneStock, #dropZoneRemito, #loadingMessage, .no-print {
               display: none !important;
             }
@@ -193,7 +181,7 @@
         document.head.appendChild(style);
       }
 
-      // 2. Reemplazar todos los canvas por imágenes (solo para impresión)
+      // 2. Reemplazar todos los <canvas> por imágenes (para que se impriman)
       const canvases = document.querySelectorAll('canvas');
       const replacements = []; // { parent, img, originalCanvas }
 
@@ -213,7 +201,7 @@
       // 3. Imprimir
       window.print();
 
-      // 4. Restaurar los canvas originales después de la impresión
+      // 4. Restaurar los canvas originales
       setTimeout(() => {
         replacements.forEach(({ parent, img, originalCanvas }) => {
           parent.replaceChild(originalCanvas, img);
@@ -251,7 +239,6 @@
       UI.showDashboard();
       Charts.actualizarGraficosDistribucion();
 
-      // Activar el botón Dashboard en el sidebar
       if (UI.elements.navDashboard) {
         UI.elements.navDashboard.classList.add('active');
         UI.elements.navAnalisis.classList.remove('active');
@@ -273,5 +260,4 @@
   if (estado) {
     console.log('Estado anterior:', estado);
   }
-})();
 })();
