@@ -91,7 +91,7 @@ const UI = {
       this.elements.panelAnalisis.classList.add('hidden');
       this.elements.navDashboard.classList.add('active');
       this.elements.navAnalisis.classList.remove('active');
-      this.elements.headerTitle.textContent = 'Dashboard Ejecutivo';
+      this.elements.headerTitle.textContent = 'Dashboard';
       this.elements.headerSubtitle.textContent = 'Resumen general del sistema';
     });
 
@@ -135,6 +135,33 @@ const UI = {
         radioPlaying = !radioPlaying;
       });
     })();
+
+    // ---------- Menú móvil (hamburguesa) ----------
+    const hamburger = document.getElementById('hamburgerBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    if (hamburger && sidebar && overlay) {
+      hamburger.addEventListener('click', () => {
+        sidebar.classList.toggle('-translate-x-full');
+        overlay.classList.toggle('hidden');
+      });
+      
+      overlay.addEventListener('click', () => {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+      });
+      
+      // Cerrar sidebar al seleccionar una opción
+      document.querySelectorAll('#navDashboard, #navAnalisis').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (window.innerWidth < 768) {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+          }
+        });
+      });
+    }
 
     // Reloj y clima
     this.startClock();

@@ -254,7 +254,9 @@ table tbody tr:hover {
   transition: transform 0.2s ease;
   padding-bottom: 10px;
   margin-left: 15px;
+  opacity: 0.7;
 }
 #radioBtn:hover {
   transform: translateX(2px);
+  opacity: 1;
 }
