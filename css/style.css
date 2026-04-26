@@ -1,5 +1,8 @@
+/* =========================================
+   CONFIGURACIÓN GLOBAL Y RESET
+   ========================================= */
 * {
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 /* Fondo global con profundidad */
@@ -19,7 +22,7 @@ aside {
   padding: 12px 14px;
   border-radius: 12px;
   color: rgba(255, 255, 255, 0.7);
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -35,13 +38,14 @@ aside {
   width: 18px;
   height: 18px;
   opacity: 0.7;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.3s ease;
 }
 
 .nav-item:hover {
   background: rgba(255, 255, 255, 0.04);
 }
 
+/* Estado activo: mantenemos tu lógica de gradiente y borde izquierdo */
 .nav-item.active {
   background: linear-gradient(135deg, #1e3a8a, #1d4ed8);
   color: #c7d2fe;
@@ -49,7 +53,7 @@ aside {
     0 0 20px rgba(59, 130, 246, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   border-left: 3px solid #3b82f6;
-  border-radius: 0 12px 12px 0; /* mantiene la forma */
+  border-radius: 0 12px 12px 0; 
 }
 
 .nav-item.active svg {
@@ -64,7 +68,7 @@ header {
   background-color: rgba(10, 10, 10, 0.8);
 }
 
-/* Cards y KPI cards con efecto flotante y profundidad */
+/* Cards y KPI cards */
 .card, .kpi-card {
   background: linear-gradient(145deg, #111, #0a0a0a);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -137,166 +141,231 @@ header {
   box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
 }
 
-/* Área de carga */
-.upload-area {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+/* Tablas */
+#tablaPrediccionBody td {
+  vertical-align: middle;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-.upload-area.dragover {
-  background-color: #1e3a5f !important;
-  border-color: #3b82f6 !important;
+.text-emerald-400 { color: #34d399 !important; } 
+.text-amber-400 { color: #fbbf24 !important; } 
+
+.text-slate-500 {
+  color: #64748b;
+  font-size: 0.7rem;
 }
 
-canvas {
-  max-height: 100%;
-  width: 100% !important;
-}
-
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #1a1a1a;
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #444;
-  border-radius: 10px;
-}
-
-/* Weather widget */
+/* =========================================
+   WEATHER WIDGET
+   ========================================= */
 .weather-widget {
-  transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px; 
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s ease;
   white-space: nowrap;
-  line-height: 1.2;
 }
 
-.weather-widget.cloudy {
-  animation: driftClouds 10s infinite ease-in-out;
+#weatherIcon i {
+  color: rgba(255, 255, 255, 0.9) !important; 
+  font-size: 1.3rem;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.2));
+  transition: all 0.5s ease;
+  display: inline-block;
 }
 
-@keyframes driftClouds {
-  0%, 100% { background-color: rgba(100, 116, 139, 0.15); }
-  50% { background-color: rgba(100, 116, 139, 0.25); }
+#weatherTemp {
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 0.95rem;
 }
 
-.weather-widget.rainy {
+#weatherDesc {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.75rem;
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  text-transform: capitalize;
+}
+
+.weather-widget.night {
+  background: linear-gradient(145deg, #050505, #0a0a1f) !important;
+  border-color: rgba(59, 130, 246, 0.15) !important;
+}
+
+.weather-widget.night #weatherIcon i {
+  color: #cbd5e1 !important;
+  filter: drop-shadow(0 0 5px rgba(148, 163, 184, 0.3));
+}
+
+/* Animaciones de Clima */
+.wi-day-sunny { animation: rotate-sun 20s linear infinite; }
+.weather-widget.cloudy #weatherIcon i { animation: float-icon 4s ease-in-out infinite; }
+.weather-widget.rainy #weatherIcon i { animation: shake-rain 1s ease-in-out infinite; }
+.weather-widget.night #weatherIcon i { animation: pulse-night 4s ease-in-out infinite; }
+
+@keyframes rotate-sun { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes float-icon { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes shake-rain { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(-0.5px, 1px); } 75% { transform: translate(0.5px, -0.5px); } }
+@keyframes pulse-night { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.75; transform: scale(1.05); } }
+
+/* =========================================
+   SPINNER W11 PEQUEÑO (para carga de remitos)
+   ========================================= */
+.w11-spinner-small {
   position: relative;
-  overflow: hidden;
+  width: 24px;
+  height: 24px;
 }
-.weather-widget.rainy::before {
-  content: '';
+
+.w11-spinner-small .dot {
   position: absolute;
-  top: -20%;
-  left: 0;
   width: 100%;
-  height: 150%;
-  background: repeating-linear-gradient(
-    transparent 0,
-    transparent 6px,
-    rgba(255, 255, 255, 0.15) 6px,
-    rgba(255, 255, 255, 0.15) 8px
-  );
-  animation: rain 1s linear infinite;
-  pointer-events: none;
-}
-
-@keyframes rain {
-  0% { transform: translateY(-20px); }
-  100% { transform: translateY(100%); }
-}
-
-/* --- Animaciones del Clima --- */
-
-#weatherIcon {
-    display: inline-block !important; /* Vital para que el emoji pueda rotar */
-    transition: all 0.5s ease;
-    transform-origin: center; /* Asegura que gire sobre su propio eje */
-}
-
-/* El Sol gira constante (1 vuelta cada 15s) */
-.weather-widget:not(.night) #weatherIcon {
-    animation: rotate-sun 15s linear infinite !important;
-}
-
-/* La Luna o Nubes flotan (balanceo constante) */
-.weather-widget.night #weatherIcon, 
-.weather-widget.cloudy #weatherIcon {
-    animation: float-icon 4s ease-in-out infinite !important;
-}
-
-/* La lluvia vibra */
-.weather-widget.rainy #weatherIcon {
-    animation: shake-rain 0.8s ease-in-out infinite !important;
-}
-
-@keyframes rotate-sun {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-@keyframes float-icon {
-    0%, 100% { transform: translateY(0) rotate(-5deg); }
-    50% { transform: translateY(-5px) rotate(5deg); }
-}
-
-@keyframes shake-rain {
-    0%, 100% { transform: translate(0,0); }
-    25% { transform: translate(-1px, 1px); }
-    75% { transform: translate(1px, -1px); }
-}
-
-/* Toast */
-.toast {
-  animation: slideIn 0.3s ease-out;
-}
-@keyframes slideIn {
-  from { transform: translateX(100%); opacity: 0; }
-  to   { transform: translateX(0); opacity: 1; }
-}
-
-/* Hover sutil en filas de tabla */
-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-/* Confianza bar */
-.confianza-bar {
-  height: 4px;
-  border-radius: 2px;
-  background: #333;
-  overflow: hidden;
-}
-.confianza-bar-fill {
   height: 100%;
-  border-radius: 2px;
-  transition: width 0.3s ease;
+  opacity: 0;
+  transform: rotate(225deg);
+  animation: w11-animate-small 3s infinite;
 }
 
-/* Select con búsqueda */
-.select-search input {
-  width: 100%;
-  padding: 0.5rem;
-  background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.5rem;
-  color: #fff;
+.w11-spinner-small .dot::after {
+  content: "";
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 4px rgba(255,255,255,0.3);
 }
 
-/* Radio en sidebar */
-#radioBtn {
-  transition: transform 0.2s ease;
-  padding-bottom: 10px;
-  margin-left: 15px;
-  opacity: 0.7;
+.w11-spinner-small .dot:nth-child(2) { animation-delay: 200ms; }
+.w11-spinner-small .dot:nth-child(3) { animation-delay: 400ms; }
+.w11-spinner-small .dot:nth-child(4) { animation-delay: 600ms; }
+.w11-spinner-small .dot:nth-child(5) { animation-delay: 800ms; }
+
+@keyframes w11-animate-small {
+  0% { transform: rotate(225deg); opacity: 1; animation-timing-function: ease-out; }
+  7% { transform: rotate(345deg); animation-timing-function: linear; }
+  30% { transform: rotate(455deg); animation-timing-function: ease-in-out; }
+  39% { transform: rotate(570deg); animation-timing-function: linear; }
+  70% { transform: rotate(815deg); opacity: 1; animation-timing-function: ease-out; }
+  75% { transform: rotate(945deg); animation-timing-function: ease-out; }
+  76% { transform: rotate(945deg); opacity: 0; }
+  100% { transform: rotate(945deg); opacity: 0; }
 }
-#radioBtn:hover {
-  transform: translateX(2px);
-  opacity: 1;
+
+@keyframes w11-animate {
+  0% { transform: rotate(225deg); opacity: 1; animation-timing-function: ease-out; }
+  7% { transform: rotate(345deg); animation-timing-function: linear; }
+  30% { transform: rotate(455deg); animation-timing-function: ease-in-out; }
+  39% { transform: rotate(570deg); animation-timing-function: linear; }
+  70% { transform: rotate(815deg); opacity: 1; animation-timing-function: ease-out; }
+  75% { transform: rotate(945deg); animation-timing-function: ease-out; }
+  76% { transform: rotate(945deg); opacity: 0; }
+  100% { transform: rotate(945deg); opacity: 0; }
+}
+
+/* =========================================
+   ELEMENTOS ADICIONALES
+   ========================================= */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #1a1a1a; border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
+
+.confianza-bar { height: 4px; border-radius: 2px; background: #333; overflow: hidden; }
+.confianza-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s ease; }
+#radioBtn { transition: transform 0.2s ease; padding-bottom: 10px; margin-left: 15px; opacity: 0.7; }
+#radioBtn:hover { transform: translateX(2px); opacity: 1; }
+
+/* =========================================
+  ESTILOS DE IMPRESIÓN (PDF) - Refactorizado
+   ========================================= */
+@media print {
+  /* 1. Reset base ganando especificidad al html y body */
+  html.dark, 
+  html.dark body.bg-black {
+    background-color: white;
+    color: black;
+    height: auto;
+    overflow: visible;
+    position: static;
+    /* Estas dos propiedades sí suelen requerir !important por cómo los navegadores manejan la tinta, pero lo evitamos si es posible */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* 2. Desarmar la estructura flexible (ganando a .flex y .h-screen) */
+  body > .flex.h-screen.overflow-hidden,
+  body main.flex-1 {
+    display: block;
+    height: auto;
+    overflow: visible;
+    position: static;
+    width: 100%;
+    background-color: white;
+  }
+
+  /* 3. Ocultar la interfaz que no va en el papel */
+  body aside#sidebar, 
+  body div#sidebarOverlay, 
+  body div#radioBtn, 
+  body div.weather-widget, 
+  body div#uploadSection, 
+  body div#toastContainer, 
+  body header, 
+  body button#hamburgerBtn, 
+  body .nav-item,
+  body div#loadingMessage {
+    display: none;
+  }
+
+  /* 4. Limpiar las tarjetas oscuras (superando a .bg-[#111] y text-white) */
+  body div.bg-\[\#111\],
+  body div.card,
+  body div.kpi-card {
+    background-color: white;
+    background-image: none;
+    border: 1px solid #ddd;
+    box-shadow: none;
+    page-break-inside: avoid;
+    margin-bottom: 25px;
+  }
+
+  /* 5. Forzar textos a negro (superando las clases de Tailwind) */
+  body .text-white,
+  body .text-gray-400,
+  body p, body span, body td, body th, body h1, body h2 {
+    color: black;
+  }
+
+  /* 6. Gráficos y Tablas */
+  body canvas {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 20px auto;
+    page-break-inside: avoid;
+  }
+
+  body table { 
+    width: 100%; 
+    border-collapse: collapse; 
+  }
+  
+  body table th { 
+    background-color: #f8f9fa; 
+    border: 1px solid #ccc; 
+    padding: 10px; 
+  }
+  
+  body table td { 
+    border: 1px solid #eee; 
+    padding: 8px; 
+  }
 }

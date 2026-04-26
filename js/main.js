@@ -210,8 +210,11 @@
     });
   }
 
+  // ==================== PROCESO PRINCIPAL CON ANIMACIÓN LOCAL ====================
   async function procesarTodo() {
-    UI.showLoading('Procesando remitos...');
+    // 1. Mostrar animación local debajo de la carga del remito
+    UI.mostrarCargaRemito();
+    // Ocultar paneles anteriores
     UI.hideDashboard();
     UI.hideNoData();
 
@@ -223,13 +226,12 @@
       Data.consumosPorProducto = mapaConsumos;
       if (Data.consumosPorProducto.size === 0) throw new Error('Ningún consumo corresponde a productos agroquímicos.');
       
-      let infoText = `✅ Remito cargado: ${consumosRaw.length} registros, ${Data.consumosPorProducto.size} productos con consumo.`;
+      let infoText = `Remito cargado: ${consumosRaw.length} registros, ${Data.consumosPorProducto.size} productos con consumo.`;
       if (noEncontrados.size > 0) {
         infoText += ` ⚠️ ${noEncontrados.size} productos del remito no están en stock.`;
       }
-      UI.elements.infoRemito.innerHTML = infoText;
 
-      UI.showLoading('Calculando predicciones...');
+      // Seguimos procesando (no mostramos aún el resultado final, porque faltan pasos)
       Data.asignarActivosAutomaticos();
       const conActivo = Data.productoAActivos.size;
       UI.elements.infoStock.innerHTML += ` · Activos inferidos: ${conActivo} de ${Data.mapeoProducto.size}.`;
@@ -245,14 +247,17 @@
       }
 
       UI.guardarEstado();
+
+      // 2. Todo listo → transición a “Obteniendo resultados...” y luego mensaje final
+      UI.mostrarResultadoRemito(infoText);
+
       UI.showToast('Datos procesados correctamente', 'success');
     } catch (err) {
       console.error(err);
-      UI.elements.infoRemito.innerHTML = `❌ Error: ${err.message}`;
+      // Mostrar el error en el mismo lugar
+      UI.mostrarResultadoRemito(`Error: ${err.message}`);
       UI.showNoData();
       UI.showToast(err.message, 'error');
-    } finally {
-      UI.hideLoading();
     }
   }
 

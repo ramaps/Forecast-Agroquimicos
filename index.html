@@ -2,12 +2,12 @@
 <html lang="es" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Forecast · Agro</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config = { darkMode: 'class' }</script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script> 
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="bg-black text-white font-sans antialiased">
@@ -15,18 +15,11 @@
 <div class="flex h-screen overflow-hidden">
   
   <!-- SIDEBAR (móvil: overlay, desktop: fijo) -->
-  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-[#0a0a0a] border-r border-white/10 flex flex-col transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0">
-    <div class="p-6">
-      <div class="flex items-center gap-3 mb-8">
-        <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M12 2C8 6 6 10 6 14a6 6 0 0012 0c0-4-2-8-6-12z"/>
-            <circle cx="12" cy="14" r="2"/>
-            <path d="M12 6v2M12 16v2M6 12h2M16 12h2"/>
-          </svg>
-        </div>
-        <h2 class="text-lg font-semibold tracking-tight text-white">Forecast</h2>
-      </div>
+<aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-[#0a0a0a] border-r border-white/10 flex flex-col transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0">
+  <div class="p-6">
+    <div class="flex items-center mb-8">
+      <h2 class="text-xl font-bold tracking-tight text-white">Forecast</h2>
+    </div>
       
       <nav class="space-y-1">
         <button id="navDashboard" class="nav-item active">
@@ -46,18 +39,18 @@
     
     <!-- Clima + Radio (anclado abajo con mt-auto) -->
     <div class="mt-auto p-4 space-y-3 border-t border-white/10">
+
       <!-- CLIMA -->
-      <div id="weatherWidget" class="flex items-center justify-center gap-2 text-sm text-white">
-        <span id="weatherIcon">
-          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>
-          </svg>
-        </span>
-        <div class="leading-tight">
-          <span id="weatherTemp" class="font-semibold">--°C</span>
-          <span id="weatherDesc" class="text-xs text-gray-400 ml-1">Cargando…</span>
-        </div>
-      </div>
+      <div id="weatherWidget" class="flex items-center px-4 py-2">
+  <span id="weatherIcon" class="mr-3 text-xl text-[#ffcc33]">
+    <i class="bi bi-moon-stars-fill"></i>
+  </span>
+
+  <div class="flex flex-wrap items-baseline gap-1">
+    <span id="weatherTemp" class="font-bold text-white">16°C</span>
+    <span id="weatherDesc" class="text-xs text-slate-400">Despejado (noche)</span>
+  </div>
+</div>
 
       <!-- RADIO -->
       <div id="radioBtn" class="flex items-center justify-center gap-2 text-xs text-white/60 hover:text-white cursor-pointer transition opacity-70 hover:opacity-100">
@@ -101,56 +94,59 @@
     <!-- ÁREA DESPLEGABLE (contenido dinámico) -->
     <div class="flex-1 overflow-auto p-6">
       
-      <!-- Carga de archivos -->
-      <div id="uploadSection" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div class="bg-[#111] rounded-2xl border border-white/10 p-4 card">
-          <h2 class="text-sm font-semibold mb-2 flex items-center gap-2 text-white">
-            <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8m18 0a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2m18 0s-4 2-9 2-9-2-9-2m9-2h.01"/>
-            </svg>
-            STOCK
-          </h2>
-          <div id="dropZoneStock" class="upload-area border-2 border-dashed border-white/10 rounded-lg p-4 text-center cursor-pointer bg-[#1a1a1a] hover:bg-[#222]">
-            <input type="file" id="fileStock" accept=".xlsx, .xls" class="hidden" />
-            <svg class="mx-auto w-8 h-8 text-blue-400 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="12" y1="18" x2="12" y2="12"/>
-              <line x1="9" y1="15" x2="15" y2="15"/>
-            </svg>
-            <p class="text-white text-sm">Cargar <span class="text-blue-400">stock de productos</span></p>
-          </div>
-          <div id="infoStock" class="mt-1 text-xs text-gray-400"></div>
-        </div>
-        <div class="bg-[#111] rounded-2xl border border-white/10 p-4 card">
-          <h2 class="text-sm font-semibold mb-2 flex items-center gap-2 text-white">
-            <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path d="M9 12h6m-3-3v6m7 5H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4l2 2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"/>
-            </svg>
-            REMITOS
-          </h2>
-          <div id="dropZoneRemito" class="upload-area border-2 border-dashed border-white/10 rounded-lg p-4 text-center cursor-pointer bg-[#1a1a1a] opacity-50 pointer-events-none" style="opacity:0.5; pointer-events:none;">
-            <input type="file" id="fileRemito" accept=".xlsx, .xls" class="hidden" disabled />
-            <svg class="mx-auto w-8 h-8 text-gray-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-            </svg>
-            <p class="text-gray-500 text-sm">Primero cargue el archivo de STOCK</p>
-          </div>
-          <div id="infoRemito" class="mt-1 text-xs text-gray-400"></div>
-        </div>
+     <div id="uploadSection" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+  
+  <div class="bg-[#111] rounded-2xl border border-white/10 p-3 card flex flex-col justify-center">
+    <div id="dropZoneStock" class="upload-area border border-dashed border-white/20 rounded-xl p-3 flex items-center gap-4 cursor-pointer bg-[#1a1a1a]/50 hover:bg-[#222] transition-all">
+      <input type="file" id="fileStock" accept=".xlsx, .xls" class="hidden" />
+      
+      <div class="bg-blue-500/10 p-2 rounded-lg">
+        <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+        </svg>
       </div>
 
-      <!-- Loading -->
-      <div id="loadingMessage" class="hidden text-center py-8">
-        <div class="inline-flex flex-col items-center px-6 py-3 rounded-full bg-white/5 border border-white/10 text-blue-300">
-          <svg class="animate-spin h-8 w-8 mb-2 text-blue-400" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span id="loadingText">Procesando datos...</span>
-        </div>
+      <div class="flex-1 text-left">
+        <h2 class="text-[11px] font-bold tracking-wider text-blue-400 uppercase">Stock</h2>
+        <p class="text-xs text-gray-400" id="infoStockText">Cargar archivo .xlsx</p>
       </div>
+    </div>
+    <div id="infoStock" class="px-2 mt-1 text-[10px] text-gray-500 truncate"></div>
+  </div>
+
+  <div class="bg-[#111] rounded-2xl border border-white/10 p-3 card flex flex-col justify-center">
+    <div id="dropZoneRemito" class="upload-area border border-dashed border-white/10 rounded-xl p-3 flex items-center gap-4 cursor-pointer bg-[#0a0a0a] opacity-50 pointer-events-none transition-all">
+      <input type="file" id="fileRemito" accept=".xlsx, .xls" class="hidden" disabled />
+      
+      <div class="bg-gray-500/10 p-2 rounded-lg">
+        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M9 12h6m-3-3v6m7 5H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4l2 2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"/>
+        </svg>
+      </div>
+
+      <div class="flex-1 text-left">
+        <h2 class="text-[11px] font-bold tracking-wider text-gray-500 uppercase">Remitos</h2>
+        <p id="statusRemitoText" class="text-[10px] text-gray-600">Bloqueado</p>
+      </div>
+    </div>
+    <div id="infoRemito" class="px-2 mt-1 text-[10px] text-gray-500 truncate"></div>
+  </div>
+
+</div>
+
+<div id="loadingRemitoLocal" class="hidden flex justify-center items-center py-8 mb-6"></div>
+
+      <!-- Loading -->
+<div id="loadingMessage" class="hidden">
+    <div class="w11-spinner">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+    </div>
+    <p id="loadingText" class="text-white mt-12 font-light tracking-widest uppercase text-[10px]">Cargando datos</p>
+</div>
 
       <!-- ==================== PANEL DASHBOARD ==================== -->
       <div id="panelDashboard" class="hidden space-y-6">

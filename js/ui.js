@@ -1,26 +1,26 @@
 const UI = {
   elements: {},
 
-  weatherMap: {
-    0:  { icon: '☀️', desc: 'Despejado', class: '' },
-    1:  { icon: '🌤️', desc: 'Mayormente despejado', class: '' },
-    2:  { icon: '⛅', desc: 'Parcialmente nublado', class: 'cloudy' },
-    3:  { icon: '☁️', desc: 'Nublado', class: 'cloudy' },
-    45: { icon: '🌫️', desc: 'Niebla', class: 'cloudy' },
-    48: { icon: '🌫️', desc: 'Niebla', class: 'cloudy' },
-    51: { icon: '🌦️', desc: 'Llovizna ligera', class: 'rainy' },
-    53: { icon: '🌦️', desc: 'Llovizna', class: 'rainy' },
-    55: { icon: '🌧️', desc: 'Llovizna intensa', class: 'rainy' },
-    61: { icon: '🌧️', desc: 'Lluvia ligera', class: 'rainy' },
-    63: { icon: '🌧️', desc: 'Lluvia', class: 'rainy' },
-    65: { icon: '🌧️', desc: 'Lluvia intensa', class: 'rainy' },
-    71: { icon: '❄️', desc: 'Nieve ligera', class: '' },
-    73: { icon: '❄️', desc: 'Nieve', class: '' },
-    75: { icon: '❄️', desc: 'Nieve intensa', class: '' },
-    80: { icon: '🌦️', desc: 'Chubascos', class: 'rainy' },
-    95: { icon: '⛈️', desc: 'Tormenta', class: 'rainy' },
-    96: { icon: '⛈️', desc: 'Tormenta con granizo', class: 'rainy' },
-    99: { icon: '⛈️', desc: 'Tormenta con granizo intenso', class: 'rainy' },
+weatherMap: {
+    0:  { day: 'wi-day-sunny', night: 'wi-night-clear', desc: 'Despejado', class: 'text-yellow-400' },
+    1:  { day: 'wi-day-sunny-overcast', night: 'wi-night-alt-cloudy', desc: 'Mayormente despejado', class: '' },
+    2:  { day: 'wi-day-cloudy', night: 'wi-night-alt-cloudy', desc: 'Parcialmente nublado', class: 'cloudy' },
+    3:  { day: 'wi-cloudy', night: 'wi-night-alt-cloudy', desc: 'Nublado', class: 'cloudy' },
+    45: { day: 'wi-fog', night: 'wi-night-fog', desc: 'Niebla', class: 'cloudy' },
+    48: { day: 'wi-fog', night: 'wi-night-fog', desc: 'Niebla', class: 'cloudy' },
+    51: { day: 'wi-day-sprinkle', night: 'wi-night-alt-sprinkle', desc: 'Llovizna ligera', class: 'rainy' },
+    53: { day: 'wi-day-showers', night: 'wi-night-alt-showers', desc: 'Llovizna', class: 'rainy' },
+    55: { day: 'wi-day-rain', night: 'wi-night-alt-rain', desc: 'Llovizna intensa', class: 'rainy' },
+    61: { day: 'wi-day-rain-mix', night: 'wi-night-alt-rain-mix', desc: 'Lluvia ligera', class: 'rainy' },
+    63: { day: 'wi-day-rain', night: 'wi-night-alt-rain', desc: 'Lluvia', class: 'rainy' },
+    65: { day: 'wi-day-rain-wind', night: 'wi-night-alt-rain-wind', desc: 'Lluvia intensa', class: 'rainy' },
+    71: { day: 'wi-day-snow', night: 'wi-night-alt-snow', desc: 'Nieve ligera', class: '' },
+    73: { day: 'wi-day-snow', night: 'wi-night-alt-snow', desc: 'Nieve', class: '' },
+    75: { day: 'wi-day-snow-wind', night: 'wi-night-alt-snow-wind', desc: 'Nieve intensa', class: '' },
+    80: { day: 'wi-day-showers', night: 'wi-night-alt-showers', desc: 'Chubascos', class: 'rainy' },
+    95: { day: 'wi-day-thunderstorm', night: 'wi-night-alt-thunderstorm', desc: 'Tormenta', class: 'rainy' },
+    96: { day: 'wi-day-hail', night: 'wi-night-alt-hail', desc: 'Tormenta con granizo', class: 'rainy' },
+    99: { day: 'wi-day-storm-showers', night: 'wi-night-alt-storm-showers', desc: 'Tormenta intensa', class: 'rainy' },
   },
 
   init() {
@@ -103,7 +103,7 @@ const UI = {
       this.elements.headerTitle.textContent = 'Análisis Avanzado';
       this.elements.headerSubtitle.textContent = 'Predicciones, gráficos y exportación de datos';
     });
-
+    
     // ---------- Reproductor de radio Aspen ----------
     (() => {
       const radioBtn = document.getElementById('radioBtn');
@@ -268,44 +268,32 @@ const UI = {
     this.elements.currentDate.textContent = `${dias[ahora.getDay()]}, ${ahora.getDate()} de ${meses[ahora.getMonth()]} de ${ahora.getFullYear()}`;
   },
 
-  // -------------------- CLIMA --------------------
-async fetchWeather() {
+// -------------------- CLIMA --------------------
+  async fetchWeather() {
     const lat = -28.8858842; 
     const lon = -62.2663477;
-    // El parámetro _ts garantiza que cada minuto pida datos nuevos y no use la caché
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto&_ts=${Date.now()}`;
     
     try {
       const res = await fetch(url);
-      if (!res.ok) throw new Error('Error de red');
       const data = await res.json();
       const w = data.current_weather;
-      
-      // is_day: 1 es día (sol arriba), 0 es noche (sol abajo)
       const isDay = w.is_day === 1;
       const code = w.weathercode;
-      const info = this.weatherMap[code] || { icon: '❓', desc: 'Desconocido', class: '' };
-      
-      let icon = info.icon;
-      let desc = info.desc;
 
-      // --- Lógica de Icono según posición del sol ---
-      if (!isDay) {
-        if (code <= 1) { // Despejado o casi despejado
-          icon = '🌙';
-          desc = (code === 0) ? 'Despejado (noche)' : 'Mayormente despejado (noche)';
-        } else if (code === 2 || code === 3) {
-          icon = '☁️'; // Nubes nocturnas
-        }
-      }
+      // 1. Buscamos la configuración en nuestro mapa
+      const info = this.weatherMap[code] || { day: 'wi-na', night: 'wi-na', desc: 'Desconocido', class: '' };
 
-      // --- Actualización del DOM ---
-      this.elements.weatherIcon.textContent = icon;
-      this.elements.weatherTemp.textContent = `${w.temperature}°C`;
+      // 2. Selección de icono y descripción
+      const iconClass = isDay ? info.day : info.night;
+      const desc = info.desc + (!isDay && code === 0 ? ' (noche)' : '');
+
+      // 3. Actualización del DOM (Usamos 'wi' que es la librería correcta)
+      this.elements.weatherIcon.innerHTML = `<i class="wi ${iconClass} text-xl"></i>`;
+      this.elements.weatherTemp.textContent = `${Math.round(w.temperature)}°C`;
       this.elements.weatherDesc.textContent = desc;
 
-      // --- Gestión de Clases para Animaciones ---
-      // IMPORTANTE: Esto es lo que activa el movimiento en el CSS
+      // 4. Gestión de clases visuales para el widget
       this.elements.weatherWidget.classList.remove('cloudy', 'rainy', 'night');
       
       if (!isDay) {
@@ -315,12 +303,18 @@ async fetchWeather() {
       if (info.class) {
         this.elements.weatherWidget.classList.add(info.class);
       }
-      
-      console.log(`Clima en Bandera: ${w.temperature}°C - ${desc} (Es día: ${isDay})`);
+
+      // 5. Color amarillo especial para el sol de día
+      if (isDay && code === 0) {
+        this.elements.weatherIcon.classList.add('text-yellow-400');
+      } else {
+        this.elements.weatherIcon.classList.remove('text-yellow-400');
+      }
+
     } catch (err) {
       console.error("Fallo al actualizar clima:", err);
-      this.elements.weatherIcon.textContent = '⚠️';
-      this.elements.weatherDesc.textContent = 'Error de conexión';
+      this.elements.weatherIcon.innerHTML = `<i class="wi wi-na"></i>`;
+      this.elements.weatherDesc.textContent = 'Sin conexión';
     }
   },
 
@@ -329,14 +323,16 @@ async fetchWeather() {
     return parseInt(this.elements.mesesPrediccionSelector?.value || '12');
   },
 
-  showLoading(text) {
+showLoading(text) {
     this.elements.loadingText.textContent = text || 'Procesando...';
     this.elements.loadingMsg.classList.remove('hidden');
-  },
+    this.elements.loadingMsg.classList.add('flex');
+},
 
-  hideLoading() {
+hideLoading() {
     this.elements.loadingMsg.classList.add('hidden');
-  },
+    this.elements.loadingMsg.classList.remove('flex');
+},
 
   showDashboard() {
     this.elements.panelDashboard.classList.remove('hidden');
@@ -357,11 +353,29 @@ async fetchWeather() {
 
   habilitarRemito() {
     const dz = this.elements.dropRemito;
+    
+    // 1. Activamos la zona (opacidad y clics)
+    dz.classList.remove('opacity-50', 'pointer-events-none');
     dz.style.opacity = '1';
     dz.style.pointerEvents = 'auto';
-    dz.classList.remove('opacity-50', 'pointer-events-none');
+
+    // 2. Cambiamos el texto y su color a un verde suave
+    const statusText = document.getElementById('statusRemitoText');
+    if (statusText) {
+      statusText.textContent = 'Habilitado'; // O "Listo para cargar"
+      statusText.classList.remove('text-gray-600');
+      statusText.classList.add('text-emerald-500/80'); // Verde suave no agresivo
+    }
+
+    // 3. Cambiamos el icono a naranja (o verde si prefieres que combine)
+    const iconRemito = dz.querySelector('svg');
+    if (iconRemito) {
+      iconRemito.classList.remove('text-gray-500');
+      iconRemito.classList.add('text-orange-400'); // Mantenemos tu color de identidad para remitos
+    }
+
+    // 4. Habilitamos el input real
     this.elements.inputRemito.disabled = false;
-    this.elements.infoRemito.innerHTML = '';
   },
 
   showToast(message, type = 'info') {
@@ -625,6 +639,86 @@ async fetchWeather() {
       if (raw) return JSON.parse(raw);
     } catch(e) {}
     return null;
+  },
+
+  // ===== NUEVO: Animación de carga debajo del remito =====
+  // 
+ mostrarCargaRemito() {
+  const container = document.getElementById('loadingRemitoLocal');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  container.className = 'flex flex-col items-center justify-center py-8 mb-6';
+  container.classList.remove('hidden');
+
+  const spinnerContainer = document.createElement('div');
+  spinnerContainer.className = 'flex flex-col items-center gap-3';
+
+  const spinner = document.createElement('div');
+  spinner.className = 'w11-spinner-small';
+  spinner.innerHTML = `
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  `;
+
+  const textoProcesando = document.createElement('p');
+  textoProcesando.className = 'text-xs text-gray-400 font-light tracking-wider uppercase';
+  textoProcesando.textContent = 'Procesando...';
+
+  const textoResultados = document.createElement('p');
+  textoResultados.className = 'text-xs text-emerald-400 font-light tracking-wider uppercase hidden';
+  textoResultados.textContent = 'Obteniendo resultados...';
+
+  spinnerContainer.appendChild(spinner);
+  spinnerContainer.appendChild(textoProcesando);
+  spinnerContainer.appendChild(textoResultados);
+  container.appendChild(spinnerContainer);
+
+  this._remitoLoading = { container, textoProcesando, textoResultados, spinner };
+  return this._remitoLoading;
+},
+
+mostrarResultadoRemito(mensaje = 'Remito procesado correctamente') {
+  const container = document.getElementById('loadingRemitoLocal');
+  if (!container || !this._remitoLoading) return;
+
+  if (this._remitoLoading.textoProcesando) {
+    this._remitoLoading.textoProcesando.classList.add('hidden');
+  }
+  if (this._remitoLoading.textoResultados) {
+    this._remitoLoading.textoResultados.classList.remove('hidden');
+    this._remitoLoading.textoResultados.textContent = mensaje;
+  }
+
+  setTimeout(() => {
+    // Limpiar el contenedor central
+    container.innerHTML = '';
+    container.classList.add('hidden');
+    
+    // Mostrar mensaje final en infoRemito (debajo del bloque de Remito)
+    const infoRemitoDiv = this.elements.infoRemito;
+    if (infoRemitoDiv) {
+      infoRemitoDiv.innerHTML = '';
+      infoRemitoDiv.className = 'px-2 mt-2';
+      const resumenFinal = document.createElement('div');
+      resumenFinal.className = 'flex items-center gap-2';
+      resumenFinal.innerHTML = `<span class="text-emerald-400 text-xs">✅</span><span class="text-[10px] text-emerald-400 font-medium">${mensaje}</span>`;
+      infoRemitoDiv.appendChild(resumenFinal);
+    }
+    this._remitoLoading = null;
+  }, 1500);
+},
+
+limpiarCargaRemito() {
+  const infoRemitoDiv = this.elements.infoRemito;
+  if (infoRemitoDiv) {
+    infoRemitoDiv.innerHTML = '';
+    infoRemitoDiv.className = 'px-2 mt-1 text-[10px] text-gray-500 truncate';
+  }
+  this._remitoLoading = null;
   }
 };
 

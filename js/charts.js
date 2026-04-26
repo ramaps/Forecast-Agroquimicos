@@ -41,7 +41,6 @@ const Charts = {
       return p ? p.cantidad : null;
     });
 
-    // Configuración de colores para tema oscuro SaaS
     Chart.defaults.color = '#fff';
     Chart.defaults.borderColor = 'rgba(255,255,255,0.1)';
 
@@ -56,10 +55,12 @@ const Charts = {
             borderColor: '#60a5fa', 
             borderWidth: 3, 
             pointBackgroundColor: '#60a5fa', 
-            pointBorderColor: '#000', 
+            pointBorderColor: '#fff', 
+            pointBorderWidth: 2,
             tension: 0.4, 
-            pointRadius: 0, 
-            pointHoverRadius: 6, 
+            pointRadius: 5,           // Puntos marcados siempre
+            pointHoverRadius: 8,      // Crecen al tocarlos
+            pointHitRadius: 15,       // Margen de contacto
             fill: true,
             backgroundColor: 'rgba(96, 165, 250, 0.05)'
           },
@@ -70,10 +71,12 @@ const Charts = {
             borderWidth: 3, 
             borderDash: [6,4], 
             pointBackgroundColor: '#fbbf24', 
-            pointBorderColor: '#000', 
+            pointBorderColor: '#fff', 
+            pointBorderWidth: 2,
             tension: 0.4, 
-            pointRadius: 0, 
-            pointHoverRadius: 6, 
+            pointRadius: 5,           // Puntos marcados siempre
+            pointHoverRadius: 8,      // Crecen al tocarlos
+            pointHitRadius: 15,       // Margen de contacto
             fill: true,
             backgroundColor: 'rgba(251, 191, 36, 0.05)'
           }
@@ -82,15 +85,24 @@ const Charts = {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: {
+          mode: 'nearest',           // Busca el punto más cercano
+          intersect: true,           // Solo muestra info al tocar el punto
+          axis: 'xy'
+        },
         plugins: {
           legend: {
-            labels: {
-              color: '#fff'
-            }
+            labels: { color: '#fff', usePointStyle: true }
           },
           tooltip: {
+            enabled: true,
+            position: 'nearest',
+            backgroundColor: 'rgba(10, 10, 10, 0.9)',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            padding: 12,
             callbacks: {
-              label: (ctx) => `${ctx.dataset.label}: ${ctx.raw !== null ? ctx.raw.toFixed(2) : '-'} lts/kg`
+              label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw !== null ? ctx.raw.toFixed(2) : '-'} lts/kg`
             }
           }
         },
@@ -98,12 +110,11 @@ const Charts = {
           y: {
             beginAtZero: true,
             grid: { color: 'rgba(255,255,255,0.05)' },
-            ticks: { color: '#888' },
-            title: { display: true, text: 'Cantidad (lts/kg)', color: '#888' }
+            ticks: { color: '#888' }
           },
           x: {
             ticks: { color: '#888' },
-            grid: { color: 'rgba(255,255,255,0.05)' }
+            grid: { display: false }
           }
         }
       }
@@ -111,7 +122,6 @@ const Charts = {
 
     document.getElementById('chartTitle').innerHTML = `<span class="w-1.5 h-5 bg-blue-500 rounded-full"></span> ${titulo}`;
     document.getElementById('chartSubtitle').textContent = subtitulo;
-
     UI.actualizarTablaPrediccion(prediccion, conteoPorMes);
   },
 
@@ -136,9 +146,6 @@ const Charts = {
     const sorted = [...consumoPorFamilia.entries()].sort((a,b) => b[1] - a[1]);
     const labels = sorted.map(e => e[0]);
     const data = sorted.map(e => e[1]);
-
-    Chart.defaults.color = '#fff';
-    Chart.defaults.borderColor = 'rgba(255,255,255,0.1)';
 
     this.distribucionFamiliaChart = new Chart(ctx, {
       type: 'doughnut',
@@ -173,9 +180,6 @@ const Charts = {
     const labels = sorted.map(e => e[0]);
     const data = sorted.map(e => e[1]);
 
-    Chart.defaults.color = '#fff';
-    Chart.defaults.borderColor = 'rgba(255,255,255,0.1)';
-
     this.distribucionActivoChart = new Chart(ctx, {
       type: 'bar',
       data: { labels: labels, datasets: [{ label: 'Consumo (lts/kg)', data: data, backgroundColor: '#34d399', borderColor: 'rgba(0,0,0,0.3)' }] },
@@ -197,4 +201,5 @@ const Charts = {
     });
   }
 };
+
 window.Charts = Charts;
