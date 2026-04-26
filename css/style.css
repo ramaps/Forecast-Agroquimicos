@@ -212,6 +212,52 @@ canvas {
   100% { transform: translateY(100%); }
 }
 
+/* --- Animaciones constantes para el Clima --- */
+
+#weatherIcon {
+    display: inline-block !important;
+    transition: all 0.5s ease;
+}
+
+/* Animación de rotación para el Sol */
+.weather-widget:not(.night) #weatherIcon {
+    animation: rotate-sun 5s linear infinite !important;
+}
+
+/* Animación de balanceo para la Luna o Nubes */
+.weather-widget.night #weatherIcon, 
+.weather-widget.cloudy #weatherIcon {
+    animation: float-icon 3s ease-in-out infinite !important;
+}
+
+/* Animación de vibración para lluvia */
+.weather-widget.rainy #weatherIcon {
+    animation: shake-rain 1s ease-in-out infinite !important;
+}
+
+@keyframes rotate-sun {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes float-icon {
+    0%, 100% { transform: translateY(0) rotate(-5deg); }
+    50% { transform: translateY(-4px) rotate(5deg); }
+}
+
+@keyframes shake-rain {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-1px) translateY(1px); }
+    75% { transform: translateX(1px) translateY(-1px); }
+}
+
+/* Estilo visual para el widget de Noche */
+.weather-widget.night {
+    background: linear-gradient(145deg, #050505, #12122b) !important;
+    border-color: rgba(100, 100, 255, 0.2) !important;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
 /* Toast */
 .toast {
   animation: slideIn 0.3s ease-out;

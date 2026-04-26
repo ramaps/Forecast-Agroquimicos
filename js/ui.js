@@ -114,26 +114,34 @@ const UI = {
 
       if (!radioBtn || !radioPlayer || !radioIcon || !radioStatus) return;
 
-      radioBtn.addEventListener('click', () => {
-        if (!radioPlaying) {
-          radioPlayer.play().then(() => {
-            // Pausa icon
-            radioIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
-            radioStatus.textContent = '●';
-            radioStatus.classList.remove('hidden');
-          }).catch(() => {
-            radioStatus.textContent = '⚠️';
-            radioStatus.classList.remove('hidden');
-            setTimeout(() => radioStatus.classList.add('hidden'), 2000);
-          });
-        } else {
-          radioPlayer.pause();
-          // Play icon
-          radioIcon.innerHTML = '<path d="M5 3l14 9-14 9V3z"/>';
-          radioStatus.classList.add('hidden');
-        }
-        radioPlaying = !radioPlaying;
-      });
+     radioBtn.addEventListener('click', () => {
+  if (!radioPlaying) {
+    // REPARACIÓN AQUÍ: Forzar la carga del stream para que sea en vivo
+    const currentSrc = radioPlayer.src;
+    radioPlayer.src = ''; // Limpiamos
+    radioPlayer.src = currentSrc; // Reasignamos para forzar el "en vivo"
+    radioPlayer.load();
+
+    radioPlayer.play().then(() => {
+      // Icono de Pausa
+      radioIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+      radioStatus.textContent = '●';
+      radioStatus.classList.remove('hidden');
+    }).catch(() => {
+      radioStatus.textContent = '⚠️';
+      radioStatus.classList.remove('hidden');
+      setTimeout(() => radioStatus.classList.add('hidden'), 2000);
+    });
+  } else {
+    radioPlayer.pause();
+    radioPlayer.src = radioPlayer.src; 
+    
+    // Icono de Play
+    radioIcon.innerHTML = '<path d="M5 3l14 9-14 9V3z"/>';
+    radioStatus.classList.add('hidden');
+  }
+  radioPlaying = !radioPlaying;
+});
     })();
 
     // ---------- Menú móvil (hamburguesa) ----------
@@ -167,7 +175,7 @@ const UI = {
     this.startClock();
     this.fetchWeather();
     setInterval(() => this.startClock(), 1000);
-    setInterval(() => this.fetchWeather(), 600000);
+    setInterval(() => this.fetchWeather(), 60000);
   },
 
   // -------------------- COMPONENTE SELECT CON BÚSQUEDA --------------------
@@ -262,40 +270,52 @@ const UI = {
 
   // -------------------- CLIMA --------------------
   async fetchWeather() {
-    const lat = -28.8858842;
-    const lon = -62.2663477;
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`;
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Error de red');
-      const data = await res.json();
-      const w = data.current_weather;
-      const code = w.weathercode;
-      const temp = w.temperature;
-      const isDay = w.is_day === 1;
+  const lat = -28.8858842; 
+  const lon = -62.2663477;
+  // Usamos _ts para evitar caché y asegurar datos frescos cada minuto
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto&_ts=${Date.now()}`;
+  
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Error de red');
+    const data = await res.json();
+    const w = data.current_weather;
+    
+    // is_day: 1 es día (sol arriba), 0 es noche (sol abajo)
+    const isDay = w.is_day === 1;
+    const code = w.weathercode;
+    const info = this.weatherMap[code] || { icon: '❓', desc: 'Desconocido', class: '' };
+    
+    let icon = info.icon;
+    let desc = info.desc;
 
-      const info = this.weatherMap[code] || { icon: '❓', desc: 'Desconocido', class: '' };
-      let icon = info.icon;
-      let desc = info.desc;
-
-      if (!isDay && (code === 0 || code === 1)) {
+    // Lógica estricta de postura del sol para el icono
+    if (!isDay) {
+      if (code <= 1) { // Despejado o casi despejado
         icon = '🌙';
-        desc = code === 0 ? 'Despejado (noche)' : 'Mayormente despejado (noche)';
+        desc = (code === 0) ? 'Despejado (noche)' : 'Mayormente despejado (noche)';
+      } else if (code === 2 || code === 3) {
+        icon = '☁️'; // Nubes nocturnas
       }
-
-      this.elements.weatherIcon.textContent = icon;
-      this.elements.weatherTemp.textContent = `${temp}°C`;
-      this.elements.weatherDesc.textContent = desc;
-
-      this.elements.weatherWidget.classList.remove('cloudy', 'rainy');
-      if (info.class) this.elements.weatherWidget.classList.add(info.class);
-    } catch (err) {
-      this.elements.weatherIcon.textContent = '⚠️';
-      this.elements.weatherTemp.textContent = '--°C';
-      this.elements.weatherDesc.textContent = 'Error';
-      this.elements.weatherWidget.classList.remove('cloudy', 'rainy');
     }
-  },
+
+    // Actualización del DOM
+    this.elements.weatherIcon.textContent = icon;
+    this.elements.weatherTemp.textContent = `${w.temperature}°C`;
+    this.elements.weatherDesc.textContent = desc;
+
+    // Gestión de Clases para Animaciones y Colores
+    this.elements.weatherWidget.classList.remove('cloudy', 'rainy', 'night');
+    
+    if (!isDay) this.elements.weatherWidget.classList.add('night');
+    if (info.class) this.elements.weatherWidget.classList.add(info.class);
+    
+    console.log(`Actualizado a las ${new Date().toLocaleTimeString()} | Día: ${isDay}`);
+  } catch (err) {
+    console.error("Fallo al actualizar clima:", err);
+    this.elements.weatherIcon.textContent = '⚠️';
+  }
+},
 
   // -------------------- MÉTODOS GENERALES --------------------
   getMesesPrediccion() {
