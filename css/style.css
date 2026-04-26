@@ -212,27 +212,28 @@ canvas {
   100% { transform: translateY(100%); }
 }
 
-/* --- Animaciones constantes para el Clima --- */
+/* --- Animaciones del Clima --- */
 
 #weatherIcon {
-    display: inline-block !important;
+    display: inline-block !important; /* Vital para que el emoji pueda rotar */
     transition: all 0.5s ease;
+    transform-origin: center; /* Asegura que gire sobre su propio eje */
 }
 
-/* Animación de rotación para el Sol */
+/* El Sol gira constante (1 vuelta cada 15s) */
 .weather-widget:not(.night) #weatherIcon {
-    animation: rotate-sun 5s linear infinite !important;
+    animation: rotate-sun 15s linear infinite !important;
 }
 
-/* Animación de balanceo para la Luna o Nubes */
+/* La Luna o Nubes flotan (balanceo constante) */
 .weather-widget.night #weatherIcon, 
 .weather-widget.cloudy #weatherIcon {
-    animation: float-icon 3s ease-in-out infinite !important;
+    animation: float-icon 4s ease-in-out infinite !important;
 }
 
-/* Animación de vibración para lluvia */
+/* La lluvia vibra */
 .weather-widget.rainy #weatherIcon {
-    animation: shake-rain 1s ease-in-out infinite !important;
+    animation: shake-rain 0.8s ease-in-out infinite !important;
 }
 
 @keyframes rotate-sun {
@@ -242,20 +243,13 @@ canvas {
 
 @keyframes float-icon {
     0%, 100% { transform: translateY(0) rotate(-5deg); }
-    50% { transform: translateY(-4px) rotate(5deg); }
+    50% { transform: translateY(-5px) rotate(5deg); }
 }
 
 @keyframes shake-rain {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-1px) translateY(1px); }
-    75% { transform: translateX(1px) translateY(-1px); }
-}
-
-/* Estilo visual para el widget de Noche */
-.weather-widget.night {
-    background: linear-gradient(145deg, #050505, #12122b) !important;
-    border-color: rgba(100, 100, 255, 0.2) !important;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    0%, 100% { transform: translate(0,0); }
+    25% { transform: translate(-1px, 1px); }
+    75% { transform: translate(1px, -1px); }
 }
 
 /* Toast */

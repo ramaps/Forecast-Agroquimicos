@@ -269,53 +269,60 @@ const UI = {
   },
 
   // -------------------- CLIMA --------------------
-  async fetchWeather() {
-  const lat = -28.8858842; 
-  const lon = -62.2663477;
-  // Usamos _ts para evitar caché y asegurar datos frescos cada minuto
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto&_ts=${Date.now()}`;
-  
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Error de red');
-    const data = await res.json();
-    const w = data.current_weather;
+async fetchWeather() {
+    const lat = -28.8858842; 
+    const lon = -62.2663477;
+    // El parámetro _ts garantiza que cada minuto pida datos nuevos y no use la caché
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto&_ts=${Date.now()}`;
     
-    // is_day: 1 es día (sol arriba), 0 es noche (sol abajo)
-    const isDay = w.is_day === 1;
-    const code = w.weathercode;
-    const info = this.weatherMap[code] || { icon: '❓', desc: 'Desconocido', class: '' };
-    
-    let icon = info.icon;
-    let desc = info.desc;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Error de red');
+      const data = await res.json();
+      const w = data.current_weather;
+      
+      // is_day: 1 es día (sol arriba), 0 es noche (sol abajo)
+      const isDay = w.is_day === 1;
+      const code = w.weathercode;
+      const info = this.weatherMap[code] || { icon: '❓', desc: 'Desconocido', class: '' };
+      
+      let icon = info.icon;
+      let desc = info.desc;
 
-    // Lógica estricta de postura del sol para el icono
-    if (!isDay) {
-      if (code <= 1) { // Despejado o casi despejado
-        icon = '🌙';
-        desc = (code === 0) ? 'Despejado (noche)' : 'Mayormente despejado (noche)';
-      } else if (code === 2 || code === 3) {
-        icon = '☁️'; // Nubes nocturnas
+      // --- Lógica de Icono según posición del sol ---
+      if (!isDay) {
+        if (code <= 1) { // Despejado o casi despejado
+          icon = '🌙';
+          desc = (code === 0) ? 'Despejado (noche)' : 'Mayormente despejado (noche)';
+        } else if (code === 2 || code === 3) {
+          icon = '☁️'; // Nubes nocturnas
+        }
       }
+
+      // --- Actualización del DOM ---
+      this.elements.weatherIcon.textContent = icon;
+      this.elements.weatherTemp.textContent = `${w.temperature}°C`;
+      this.elements.weatherDesc.textContent = desc;
+
+      // --- Gestión de Clases para Animaciones ---
+      // IMPORTANTE: Esto es lo que activa el movimiento en el CSS
+      this.elements.weatherWidget.classList.remove('cloudy', 'rainy', 'night');
+      
+      if (!isDay) {
+        this.elements.weatherWidget.classList.add('night');
+      }
+      
+      if (info.class) {
+        this.elements.weatherWidget.classList.add(info.class);
+      }
+      
+      console.log(`Clima en Bandera: ${w.temperature}°C - ${desc} (Es día: ${isDay})`);
+    } catch (err) {
+      console.error("Fallo al actualizar clima:", err);
+      this.elements.weatherIcon.textContent = '⚠️';
+      this.elements.weatherDesc.textContent = 'Error de conexión';
     }
-
-    // Actualización del DOM
-    this.elements.weatherIcon.textContent = icon;
-    this.elements.weatherTemp.textContent = `${w.temperature}°C`;
-    this.elements.weatherDesc.textContent = desc;
-
-    // Gestión de Clases para Animaciones y Colores
-    this.elements.weatherWidget.classList.remove('cloudy', 'rainy', 'night');
-    
-    if (!isDay) this.elements.weatherWidget.classList.add('night');
-    if (info.class) this.elements.weatherWidget.classList.add(info.class);
-    
-    console.log(`Actualizado a las ${new Date().toLocaleTimeString()} | Día: ${isDay}`);
-  } catch (err) {
-    console.error("Fallo al actualizar clima:", err);
-    this.elements.weatherIcon.textContent = '⚠️';
-  }
-},
+  },
 
   // -------------------- MÉTODOS GENERALES --------------------
   getMesesPrediccion() {
