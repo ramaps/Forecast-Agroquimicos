@@ -102,7 +102,7 @@ actualizarGraficoPrincipal(series, titulo, subtitulo, productosSeleccionados = [
           <div class="w-3.5 h-3.5 rounded-full ${colorCirculo} mr-3 ${stockTotal <= 0 || mesQuiebre ? 'animate-pulse' : ''}"></div>
           <div class="flex flex-col">
             <span class="text-white font-bold text-lg leading-none">
-              ${stockFormateado} <span class="text-sm font-normal text-zinc-500">unidades</span>
+              ${stockFormateado} <span class="text-sm font-normal text-zinc-500">L/Kg</span>
             </span>
             <span class="text-[10px] uppercase tracking-widest font-bold mt-1" style="color: ${hexColor}">
               ${mensajeEstado}
