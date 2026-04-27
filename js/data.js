@@ -155,9 +155,28 @@ const Data = {
   },
 
   // ---------- PREDICCIÓN MEJORADA (media ponderada por año) ----------
+
+  calcularTendencia(registros) {
+  if (registros.length < 3) return 0;
+
+  const puntos = registros
+    .sort((a,b) => a.fecha - b.fecha)
+    .map((r, i) => ({ x: i, y: r.cantidad }));
+
+  const n = puntos.length;
+  const sumX = puntos.reduce((a,p) => a + p.x, 0);
+  const sumY = puntos.reduce((a,p) => a + p.y, 0);
+  const sumXY = puntos.reduce((a,p) => a + p.x * p.y, 0);
+  const sumX2 = puntos.reduce((a,p) => a + p.x * p.x, 0);
+
+  const pendiente = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  return isNaN(pendiente) ? 0 : pendiente;
+  },
+
   predecirMensual(registros, mesesPrediccion = 12) {
     // Agrupar por mes-año
     const historico = {};
+    
     for (let r of registros) {
       const año = r.fecha.getFullYear();
       const mes = String(r.fecha.getMonth() + 1).padStart(2, '0');
@@ -204,17 +223,34 @@ const Data = {
     let añoActual = hoy.getFullYear();
     let mesActual = hoy.getMonth() + 1;
     const prediccion = [];
-    for (let i = 1; i <= mesesPrediccion; i++) {
-      let mesPred = mesActual + i;
-      let añoPred = añoActual;
-      while (mesPred > 12) {
-        mesPred -= 12;
-        añoPred++;
-      }
-      const cantidadPred = promedioPonderadoPorMes[mesPred];
-      const clave = `${añoPred}-${String(mesPred).padStart(2, '0')}`;
-      prediccion.push({ mes: clave, cantidad: Math.round(cantidadPred * 100) / 100 });
-    }
+
+const tendencia = this.calcularTendencia(registros);
+
+const promedioGeneral = promedioPonderadoPorMes.reduce((a,b) => a + b, 0) / 12;
+
+for (let i = 1; i <= mesesPrediccion; i++) {
+  let mesPred = mesActual + i;
+  let añoPred = añoActual;
+
+  while (mesPred > 12) {
+    mesPred -= 12;
+    añoPred++;
+  }
+
+  const ajusteTendencia = Math.max(0.5, Math.min(1.5, 1 + (tendencia * i * 0.05)));
+
+  const base = promedioPonderadoPorMes[mesPred] || promedioGeneral;
+
+  const factorEstacional = Calendario.getEventosMes(mesPred).length > 0 ? 1.1 : 1;
+
+  const cantidadPred = base * ajusteTendencia * factorEstacional;
+
+  const clave = `${añoPred}-${String(mesPred).padStart(2, '0')}`;
+  prediccion.push({
+    mes: clave,
+    cantidad: Math.round(cantidadPred * 100) / 100
+  });
+}
 
     const mesesHistoricos = Object.keys(historico).sort();
     const historicoArray = mesesHistoricos.map(m => ({ mes: m, cantidad: historico[m] }));
