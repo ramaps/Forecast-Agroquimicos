@@ -525,52 +525,73 @@ hideLoading() {
     this.elements.toggleActivo.checked = false;
   },
 
-  actualizarSelectores() {
-    const familia = this.elements.familiaSelector.getValue();
-    const usarActivo = this.elements.toggleActivo.checked;
-    const activoSeleccionado = this.elements.activoSelector.getValue();
+ actualizarSelectores() {
+  const familia = this.elements.familiaSelector.getValue();
+  const usarActivo = this.elements.toggleActivo.checked;
+  let activoSeleccionado = this.elements.activoSelector.getValue();
 
-    if (!familia) {
-      this.elements.activoSelector.setOpciones([{ valor: '', texto: '-- Desactivado --' }]);
+  // --- Manejo del selector de activo ---
+  if (!familia) {
+    // No hay familia seleccionada → deshabilitar y limpiar activo
+    this.elements.activoSelector.setOpciones([{ valor: '', texto: '-- Desactivado --' }]);
+    this.elements.activoSelector.disable();
+    this.elements.activoSelector.limpiar();
+  } else {
+    const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
+    const activosEnFamilia = new Set();
+    for (let prod of prodsFamilia) {
+      const acts = Data.productoAActivos.get(prod);
+      if (acts) acts.split(',').map(a => Utils.normalizar(a.trim())).forEach(a => activosEnFamilia.add(a));
+    }
+    const opcionesActivo = [{ valor: '', texto: '-- Todos los activos --' }, ...[...activosEnFamilia].sort().map(a => ({ valor: a, texto: a }))];
+    this.elements.activoSelector.setOpciones(opcionesActivo);
+
+    if (usarActivo) {
+      this.elements.activoSelector.enable();
+      // Verificar si el activo seleccionado sigue existiendo en la nueva lista
+      if (activoSeleccionado && !opcionesActivo.some(opt => opt.valor === activoSeleccionado)) {
+        // El activo ya no es válido → limpiar
+        this.elements.activoSelector.limpiar();
+        activoSeleccionado = '';
+      } else if (activoSeleccionado) {
+        // Restaurar el valor (si existe)
+        const opcion = opcionesActivo.find(o => o.valor === activoSeleccionado);
+        if (opcion) this.elements.activoSelector.setValue(opcion.valor, opcion.texto);
+      }
+    } else {
       this.elements.activoSelector.disable();
       this.elements.activoSelector.limpiar();
-    } else {
-      const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
-      const activosEnFamilia = new Set();
-      for (let prod of prodsFamilia) {
-        const acts = Data.productoAActivos.get(prod);
-        if (acts) acts.split(',').map(a => Utils.normalizar(a.trim())).forEach(a => activosEnFamilia.add(a));
-      }
-      const opcionesActivo = [{ valor: '', texto: '-- Todos los activos --' }, ...[...activosEnFamilia].sort().map(a => ({ valor: a, texto: a }))];
-      this.elements.activoSelector.setOpciones(opcionesActivo);
-      if (usarActivo) {
-        this.elements.activoSelector.enable();
-        if (activoSeleccionado) {
-          const opcion = opcionesActivo.find(o => o.valor === activoSeleccionado);
-          if (opcion) this.elements.activoSelector.setValue(opcion.valor, opcion.texto);
-        }
-      } else {
-        this.elements.activoSelector.disable();
-        this.elements.activoSelector.limpiar();
-      }
+      activoSeleccionado = '';
     }
+  }
 
-    if (!familia) {
-      this.elements.productoSelector.setOpciones([{ valor: '', texto: '-- Primero seleccione familia --' }]);
-      this.elements.productoSelector.disable();
-      this.elements.productoSelector.limpiar();
-      return;
-    }
-    const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
-    let productosFiltrados = prodsFamilia;
-    if (usarActivo && activoSeleccionado) {
-      const prodsDelActivo = Data.productosPorActivo.get(activoSeleccionado) || new Set();
-      productosFiltrados = prodsFamilia.filter(p => prodsDelActivo.has(p));
-    }
-    const opcionesProducto = [{ valor: '', texto: '-- Ver todos --' }, ...productosFiltrados.sort().map(p => ({ valor: p, texto: p }))];
-    this.elements.productoSelector.setOpciones(opcionesProducto);
-    this.elements.productoSelector.enable();
-  },
+  // --- Manejo del selector de producto ---
+  if (!familia) {
+    this.elements.productoSelector.setOpciones([{ valor: '', texto: '-- Primero seleccione familia --' }]);
+    this.elements.productoSelector.disable();
+    this.elements.productoSelector.limpiar();
+    return;
+  }
+
+  const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
+  let productosFiltrados = prodsFamilia;
+  const activoActual = usarActivo ? this.elements.activoSelector.getValue() : '';
+  if (usarActivo && activoActual) {
+    const prodsDelActivo = Data.productosPorActivo.get(activoActual) || new Set();
+    productosFiltrados = prodsFamilia.filter(p => prodsDelActivo.has(p));
+  }
+
+  const opcionesProducto = [{ valor: '', texto: '-- Ver todos --' }, ...productosFiltrados.sort().map(p => ({ valor: p, texto: p }))];
+  this.elements.productoSelector.setOpciones(opcionesProducto);
+
+  // Verificar si el producto actualmente seleccionado sigue siendo válido
+  const productoActual = this.elements.productoSelector.getValue();
+  if (productoActual && !opcionesProducto.some(opt => opt.valor === productoActual)) {
+    this.elements.productoSelector.limpiar();
+  }
+
+  this.elements.productoSelector.enable();
+},
 
   // -------------------- TABLA DE PREDICCIÓN --------------------
   actualizarTablaPrediccion(prediccion, conteoPorMes) {
