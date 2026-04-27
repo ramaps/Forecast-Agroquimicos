@@ -178,7 +178,7 @@ weatherMap: {
     setInterval(() => this.fetchWeather(), 60000);
   },
 
-  // -------------------- COMPONENTE SELECT CON BÚSQUEDA --------------------
+  // -------------------- COMPONENTE SELECT CON BÚSQUEDA (CORREGIDO) --------------------
   crearSelectBusqueda(contenedor, opciones, placeholder = 'Buscar...', onChange = null) {
     contenedor.innerHTML = '';
     contenedor.className = 'select-search relative';
@@ -231,16 +231,45 @@ weatherMap: {
     input.addEventListener('focus', () => renderLista(input.value));
     input.addEventListener('input', () => renderLista(input.value));
 
+    // ========== NUEVOS: limpian el hidden cuando el usuario borra manualmente ==========
+    input.addEventListener('input', () => {
+      if (input.value.trim() === '') {
+        hiddenInput.value = '';
+        valorSeleccionado = '';
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      const textoActual = input.value.trim();
+      if (textoActual === '') {
+        hiddenInput.value = '';
+        valorSeleccionado = '';
+        return;
+      }
+      const coincide = opcionesArray.some(opt => opt.texto === textoActual);
+      if (!coincide) {
+        input.value = '';
+        hiddenInput.value = '';
+        valorSeleccionado = '';
+      }
+    });
+
     document.addEventListener('click', (e) => {
       if (!contenedor.contains(e.target)) lista.classList.add('hidden');
     });
 
+    // ========== MEJORA: no limpia si el valor actual sigue siendo válido ==========
     contenedor.setOpciones = (nuevasOpciones) => {
       opcionesArray = nuevasOpciones;
-      input.value = '';
-      hiddenInput.value = '';
-      valorSeleccionado = '';
+      const valorActual = hiddenInput.value;
+      const existe = nuevasOpciones.some(opt => opt.valor === valorActual);
+      if (!existe && valorActual !== '') {
+        input.value = '';
+        hiddenInput.value = '';
+        valorSeleccionado = '';
+      }
     };
+    
     contenedor.setValue = (valor, texto) => {
       input.value = texto || '';
       hiddenInput.value = valor;
