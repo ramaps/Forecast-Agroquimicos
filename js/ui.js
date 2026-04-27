@@ -530,38 +530,39 @@ hideLoading() {
 
   // -------------------- SELECTORES CON BÚSQUEDA --------------------
   construirSelectoresIniciales() {
-    const centros = [...Data.centrosSet].sort().map(c => ({ valor: c, texto: c }));
-    this.crearSelectBusqueda(this.elements.centroSelector, [{ valor: '', texto: '-- Todos --' }, ...centros], 'Buscar centro...');
+  const centros = [...Data.centrosSet].sort().map(c => ({ valor: c, texto: c }));
+  this.crearSelectBusqueda(this.elements.centroSelector, [{ valor: '', texto: '-- Todos --' }, ...centros], 'Buscar centro...');
 
-    const familias = [...Data.familiasSet].sort().map(f => ({ valor: f, texto: f }));
-    this.crearSelectBusqueda(this.elements.familiaSelector, [{ valor: '', texto: '-- Seleccione --' }, ...familias], 'Buscar familia...', (valor) => {
-      this.actualizarSelectores();
-    });
+  const familias = [...Data.familiasSet].sort().map(f => ({ valor: f, texto: f }));
+  this.crearSelectBusqueda(this.elements.familiaSelector, [{ valor: '', texto: '-- Seleccione --' }, ...familias], 'Buscar familia...', (valor) => {
+    this.actualizarSelectores(); // Al cambiar la familia, se filtran los productos
+  });
 
-    this.crearSelectBusqueda(this.elements.activoSelector, [{ valor: '', texto: '-- Desactivado --' }], 'Buscar activo...');
-    this.elements.activoSelector.disable();
+  this.crearSelectBusqueda(this.elements.activoSelector, [{ valor: '', texto: '-- Desactivado --' }], 'Buscar activo...');
+  this.elements.activoSelector.disable();
 
-    this.crearSelectBusqueda(this.elements.productoSelector, [{ valor: '', texto: '-- Primero seleccione familia --' }], 'Buscar producto...');
-    this.elements.productoSelector.disable();
+  // --- CAMBIO: el productoSelector se crea con TODOS los productos (sin depender de familia) ---
+  const todosLosProductos = [...Data.mapeoProducto.keys()].sort().map(p => ({ valor: p, texto: p }));
+  this.crearSelectBusqueda(this.elements.productoSelector, [{ valor: '', texto: '-- Buscar producto --' }, ...todosLosProductos], 'Escriba el nombre del producto...');
+  this.elements.productoSelector.enable(); // Siempre habilitado
 
-    Data.productosPorFamilia.clear();
-    for (let [prod, info] of Data.mapeoProducto) {
-      const fam = info.familia;
-      if (!Data.productosPorFamilia.has(fam)) Data.productosPorFamilia.set(fam, []);
-      Data.productosPorFamilia.get(fam).push(prod);
-    }
+  Data.productosPorFamilia.clear();
+  for (let [prod, info] of Data.mapeoProducto) {
+    const fam = info.familia;
+    if (!Data.productosPorFamilia.has(fam)) Data.productosPorFamilia.set(fam, []);
+    Data.productosPorFamilia.get(fam).push(prod);
+  }
 
-    this.elements.toggleActivo.checked = false;
-  },
+  this.elements.toggleActivo.checked = false;
+},
 
- actualizarSelectores() {
+actualizarSelectores() {
   const familia = this.elements.familiaSelector.getValue();
   const usarActivo = this.elements.toggleActivo.checked;
   let activoSeleccionado = this.elements.activoSelector.getValue();
 
-  // --- Manejo del selector de activo ---
+  // --- Manejo del selector de activo (igual que antes) ---
   if (!familia) {
-    // No hay familia seleccionada → deshabilitar y limpiar activo
     this.elements.activoSelector.setOpciones([{ valor: '', texto: '-- Desactivado --' }]);
     this.elements.activoSelector.disable();
     this.elements.activoSelector.limpiar();
@@ -577,13 +578,10 @@ hideLoading() {
 
     if (usarActivo) {
       this.elements.activoSelector.enable();
-      // Verificar si el activo seleccionado sigue existiendo en la nueva lista
       if (activoSeleccionado && !opcionesActivo.some(opt => opt.valor === activoSeleccionado)) {
-        // El activo ya no es válido → limpiar
         this.elements.activoSelector.limpiar();
         activoSeleccionado = '';
       } else if (activoSeleccionado) {
-        // Restaurar el valor (si existe)
         const opcion = opcionesActivo.find(o => o.valor === activoSeleccionado);
         if (opcion) this.elements.activoSelector.setValue(opcion.valor, opcion.texto);
       }
@@ -594,34 +592,37 @@ hideLoading() {
     }
   }
 
-  // --- Manejo del selector de producto ---
-  if (!familia) {
-    this.elements.productoSelector.setOpciones([{ valor: '', texto: '-- Primero seleccione familia --' }]);
-    this.elements.productoSelector.disable();
-    this.elements.productoSelector.limpiar();
-    return;
+  // --- Manejo del selector de producto (AHORA SIEMPRE HABILITADO) ---
+  // 1. Obtener todos los productos (inicialmente)
+  let todosProductos = [...Data.mapeoProducto.keys()].sort();
+
+  // 2. Aplicar filtro por familia (si existe)
+  let productosFiltrados = todosProductos;
+  if (familia) {
+    const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
+    productosFiltrados = prodsFamilia;
   }
 
-  const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
-  let productosFiltrados = prodsFamilia;
+  // 3. Aplicar filtro por activo (si está activado y hay activo seleccionado)
   const activoActual = usarActivo ? this.elements.activoSelector.getValue() : '';
   if (usarActivo && activoActual) {
     const prodsDelActivo = Data.productosPorActivo.get(activoActual) || new Set();
-    productosFiltrados = prodsFamilia.filter(p => prodsDelActivo.has(p));
+    productosFiltrados = productosFiltrados.filter(p => prodsDelActivo.has(p));
   }
 
-  const opcionesProducto = [{ valor: '', texto: '-- Ver todos --' }, ...productosFiltrados.sort().map(p => ({ valor: p, texto: p }))];
+  // 4. Construir opciones del productoSelector
+  const opcionesProducto = [{ valor: '', texto: '-- Ver todos --' }, ...productosFiltrados.map(p => ({ valor: p, texto: p }))];
   this.elements.productoSelector.setOpciones(opcionesProducto);
 
-  // Verificar si el producto actualmente seleccionado sigue siendo válido
+  // 5. Verificar si el producto actualmente seleccionado sigue siendo válido
   const productoActual = this.elements.productoSelector.getValue();
   if (productoActual && !opcionesProducto.some(opt => opt.valor === productoActual)) {
     this.elements.productoSelector.limpiar();
   }
 
-  this.elements.productoSelector.enable();
+  this.elements.productoSelector.enable(); // Siempre habilitado
 },
-
+  
   // -------------------- TABLA DE PREDICCIÓN --------------------
   actualizarTablaPrediccion(prediccion, conteoPorMes) {
     const tabla = this.elements.tablaPrediccionBody.closest('table');
