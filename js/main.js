@@ -50,42 +50,53 @@
     UI.actualizarSelectores();
   });
 
-  // Botón Actualizar gráfico
+  // ==================== BOTÓN ACTUALIZAR GRÁFICO (CORREGIDO) ====================
   UI.elements.verGraficoBtn.addEventListener('click', () => {
+    const producto = UI.elements.productoSelector.getValue();
     const familia = UI.elements.familiaSelector.getValue();
-    if (!familia) {
-      UI.showToast('Seleccione una familia y presione Actualizar para ver la predicción', 'warning');
-      return;
-    }
     const usarActivo = UI.elements.toggleActivo.checked;
     const activo = UI.elements.activoSelector.getValue();
-    const producto = UI.elements.productoSelector.getValue();
 
-    let productosSeleccionados;
-    let titulo;
+    let productosSeleccionados = [];
+    let titulo = '';
 
+    // Caso 1: Hay un producto específico seleccionado
     if (producto) {
       productosSeleccionados = [producto];
       titulo = `Producto: ${producto}`;
-    } else if (usarActivo && activo) {
-      const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
-      const prodsDelActivo = Data.productosPorActivo.get(activo) || new Set();
-      productosSeleccionados = prodsFamilia.filter(p => prodsDelActivo.has(p));
-      if (productosSeleccionados.length === 0) {
-        UI.showToast(`No hay productos en la familia ${familia} con el activo ${activo}`, 'warning');
-        return;
+    }
+    // Caso 2: No hay producto, pero sí familia
+    else if (familia) {
+      if (usarActivo && activo) {
+        const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
+        const prodsDelActivo = Data.productosPorActivo.get(activo) || new Set();
+        productosSeleccionados = prodsFamilia.filter(p => prodsDelActivo.has(p));
+        if (productosSeleccionados.length === 0) {
+          UI.showToast(`No hay productos en la familia ${familia} con el activo ${activo}`, 'warning');
+          return;
+        }
+        titulo = `Activo: ${activo} (familia ${familia})`;
+      } else {
+        productosSeleccionados = Data.productosPorFamilia.get(familia) || [];
+        if (productosSeleccionados.length === 0) {
+          UI.showToast(`No hay productos en la familia ${familia}`, 'warning');
+          return;
+        }
+        titulo = `Familia: ${familia}`;
       }
-      titulo = `Activo: ${activo} (familia ${familia})`;
-    } else {
-      productosSeleccionados = Data.productosPorFamilia.get(familia) || [];
-      if (productosSeleccionados.length === 0) {
-        UI.showToast(`No hay productos en la familia ${familia}`, 'warning');
-        return;
-      }
-      titulo = `Familia: ${familia}`;
+    }
+    // Caso 3: No hay producto ni familia
+    else {
+      UI.showToast('Seleccione un producto o una familia para ver la predicción', 'warning');
+      return;
     }
 
     const series = Data.obtenerSeriesPorProductos(productosSeleccionados);
+    if (!series || series.prediccion.length === 0) {
+      UI.showToast('No hay datos suficientes para predecir', 'error');
+      return;
+    }
+
     Charts.actualizarGraficoPrincipal(series, titulo, '', productosSeleccionados);
     UI.showToast('Predicción actualizada', 'success');
   });
