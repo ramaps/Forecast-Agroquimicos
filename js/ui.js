@@ -65,7 +65,7 @@ weatherMap: {
       familiaSelector: document.getElementById('familiaSelector'),
       productoSelector: document.getElementById('productoSelector'),
       activoSelector: document.getElementById('activoSelector'),
-      toggleActivo: document.getElementById('toggleActivo'),
+      // toggleActivo: document.getElementById('toggleActivo'),  ← ELIMINADO
       mesesPrediccionSelector: document.getElementById('mesesPrediccionSelector'),
       verGraficoBtn: document.getElementById('verGraficoBtn'),
       tablaPrediccionBody: document.getElementById('tablaPrediccionBody'),
@@ -530,98 +530,98 @@ hideLoading() {
 
   // -------------------- SELECTORES CON BÚSQUEDA --------------------
   construirSelectoresIniciales() {
-  const centros = [...Data.centrosSet].sort().map(c => ({ valor: c, texto: c }));
-  this.crearSelectBusqueda(this.elements.centroSelector, [{ valor: '', texto: '-- Todos --' }, ...centros], 'Buscar centro...');
+    const centros = [...Data.centrosSet].sort().map(c => ({ valor: c, texto: c }));
+    this.crearSelectBusqueda(this.elements.centroSelector, [{ valor: '', texto: '-- Todos --' }, ...centros], 'Buscar centro...');
 
-  const familias = [...Data.familiasSet].sort().map(f => ({ valor: f, texto: f }));
-  this.crearSelectBusqueda(this.elements.familiaSelector, [{ valor: '', texto: '-- Seleccione --' }, ...familias], 'Buscar familia...', (valor) => {
-    this.actualizarSelectores(); // Al cambiar la familia, se filtran los productos
-  });
+    const familias = [...Data.familiasSet].sort().map(f => ({ valor: f, texto: f }));
+    this.crearSelectBusqueda(this.elements.familiaSelector, [{ valor: '', texto: '-- Seleccione --' }, ...familias], 'Buscar familia...', (valor) => {
+      this.actualizarSelectores(); // Al cambiar la familia, se filtran los productos y los activos
+    });
 
-  this.crearSelectBusqueda(this.elements.activoSelector, [{ valor: '', texto: '-- Desactivado --' }], 'Buscar activo...');
-  this.elements.activoSelector.disable();
+    // --- Activo: Siempre disponible, muestra todos los activos cargados ---
+    const activosTodos = [...Data.activosSet].sort().map(a => ({ valor: a, texto: a }));
+    this.crearSelectBusqueda(this.elements.activoSelector,
+      [{ valor: '', texto: '-- Todos los activos --' }, ...activosTodos],
+      'Buscar activo...'
+    );
+    this.elements.activoSelector.enable(); // Siempre habilitado
 
-  // --- CAMBIO: el productoSelector se crea con TODOS los productos (sin depender de familia) ---
-  const todosLosProductos = [...Data.mapeoProducto.keys()].sort().map(p => ({ valor: p, texto: p }));
-  this.crearSelectBusqueda(this.elements.productoSelector, [{ valor: '', texto: '-- Buscar producto --' }, ...todosLosProductos], 'Escriba el nombre del producto...');
-  this.elements.productoSelector.enable(); // Siempre habilitado
+    // --- Producto: siempre habilitado, con todos los productos inicialmente ---
+    const todosLosProductos = [...Data.mapeoProducto.keys()].sort().map(p => ({ valor: p, texto: p }));
+    this.crearSelectBusqueda(this.elements.productoSelector, [{ valor: '', texto: '-- Buscar producto --' }, ...todosLosProductos], 'Escriba el nombre del producto...');
+    this.elements.productoSelector.enable();
 
-  Data.productosPorFamilia.clear();
-  for (let [prod, info] of Data.mapeoProducto) {
-    const fam = info.familia;
-    if (!Data.productosPorFamilia.has(fam)) Data.productosPorFamilia.set(fam, []);
-    Data.productosPorFamilia.get(fam).push(prod);
-  }
-
-  this.elements.toggleActivo.checked = false;
-},
-
-actualizarSelectores() {
-  const familia = this.elements.familiaSelector.getValue();
-  const usarActivo = this.elements.toggleActivo.checked;
-  let activoSeleccionado = this.elements.activoSelector.getValue();
-
-  // --- Manejo del selector de activo (igual que antes) ---
-  if (!familia) {
-    this.elements.activoSelector.setOpciones([{ valor: '', texto: '-- Desactivado --' }]);
-    this.elements.activoSelector.disable();
-    this.elements.activoSelector.limpiar();
-  } else {
-    const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
-    const activosEnFamilia = new Set();
-    for (let prod of prodsFamilia) {
-      const acts = Data.productoAActivos.get(prod);
-      if (acts) acts.split(',').map(a => Utils.normalizar(a.trim())).forEach(a => activosEnFamilia.add(a));
+    // Inicializar mapa de productos por familia (necesario para filtros)
+    Data.productosPorFamilia.clear();
+    for (let [prod, info] of Data.mapeoProducto) {
+      const fam = info.familia;
+      if (!Data.productosPorFamilia.has(fam)) Data.productosPorFamilia.set(fam, []);
+      Data.productosPorFamilia.get(fam).push(prod);
     }
-    const opcionesActivo = [{ valor: '', texto: '-- Todos los activos --' }, ...[...activosEnFamilia].sort().map(a => ({ valor: a, texto: a }))];
-    this.elements.activoSelector.setOpciones(opcionesActivo);
+  },
 
-    if (usarActivo) {
-      this.elements.activoSelector.enable();
-      if (activoSeleccionado && !opcionesActivo.some(opt => opt.valor === activoSeleccionado)) {
-        this.elements.activoSelector.limpiar();
-        activoSeleccionado = '';
-      } else if (activoSeleccionado) {
-        const opcion = opcionesActivo.find(o => o.valor === activoSeleccionado);
-        if (opcion) this.elements.activoSelector.setValue(opcion.valor, opcion.texto);
+  actualizarSelectores() {
+    const familia = this.elements.familiaSelector.getValue();
+    const activoSeleccionado = this.elements.activoSelector.getValue(); // Ya no hay toggle, siempre usamos el valor
+    const centroSeleccionado = this.elements.centroSelector.getValue(); // No se usa en el filtro actual, pero queda por si más adelante
+
+    // ---------- Activo ----------
+    let activosOpciones = [];
+    if (familia) {
+      // Si hay familia, mostramos solo los activos de esa familia
+      const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
+      const activosEnFamilia = new Set();
+      for (let prod of prodsFamilia) {
+        const acts = Data.productoAActivos.get(prod);
+        if (acts) acts.split(',').map(a => Utils.normalizar(a.trim())).forEach(a => activosEnFamilia.add(a));
       }
+      activosOpciones = [...activosEnFamilia].sort().map(a => ({ valor: a, texto: a }));
     } else {
-      this.elements.activoSelector.disable();
-      this.elements.activoSelector.limpiar();
-      activoSeleccionado = '';
+      // Sin familia, mostramos todos los activos
+      activosOpciones = [...Data.activosSet].sort().map(a => ({ valor: a, texto: a }));
     }
-  }
 
-  // --- Manejo del selector de producto (AHORA SIEMPRE HABILITADO) ---
-  // 1. Obtener todos los productos (inicialmente)
-  let todosProductos = [...Data.mapeoProducto.keys()].sort();
+    const opcionesActivo = [{ valor: '', texto: '-- Todos los activos --' }, ...activosOpciones];
+    this.elements.activoSelector.setOpciones(opcionesActivo);
+    this.elements.activoSelector.enable();
 
-  // 2. Aplicar filtro por familia (si existe)
-  let productosFiltrados = todosProductos;
-  if (familia) {
-    const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
-    productosFiltrados = prodsFamilia;
-  }
+    // Validar si el activo seleccionado sigue existiendo en las nuevas opciones
+    if (activoSeleccionado && !opcionesActivo.some(opt => opt.valor === activoSeleccionado)) {
+      this.elements.activoSelector.limpiar();
+    } else if (activoSeleccionado) {
+      // Mantener el texto correcto (por si se actualizaron las opciones)
+      const opcionActual = opcionesActivo.find(o => o.valor === activoSeleccionado);
+      if (opcionActual) this.elements.activoSelector.setValue(opcionActual.valor, opcionActual.texto);
+    }
 
-  // 3. Aplicar filtro por activo (si está activado y hay activo seleccionado)
-  const activoActual = usarActivo ? this.elements.activoSelector.getValue() : '';
-  if (usarActivo && activoActual) {
-    const prodsDelActivo = Data.productosPorActivo.get(activoActual) || new Set();
-    productosFiltrados = productosFiltrados.filter(p => prodsDelActivo.has(p));
-  }
+    // ---------- Producto ----------
+    let todosProductos = [...Data.mapeoProducto.keys()].sort();
+    let productosFiltrados = todosProductos;
 
-  // 4. Construir opciones del productoSelector
-  const opcionesProducto = [{ valor: '', texto: '-- Ver todos --' }, ...productosFiltrados.map(p => ({ valor: p, texto: p }))];
-  this.elements.productoSelector.setOpciones(opcionesProducto);
+    if (familia) {
+      const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
+      productosFiltrados = prodsFamilia;
+    }
 
-  // 5. Verificar si el producto actualmente seleccionado sigue siendo válido
-  const productoActual = this.elements.productoSelector.getValue();
-  if (productoActual && !opcionesProducto.some(opt => opt.valor === productoActual)) {
-    this.elements.productoSelector.limpiar();
-  }
+    const activoActual = this.elements.activoSelector.getValue(); // Puede ser ''
+    if (activoActual) {
+      const prodsDelActivo = Data.productosPorActivo.get(activoActual) || new Set();
+      productosFiltrados = productosFiltrados.filter(p => prodsDelActivo.has(p));
+    }
 
-  this.elements.productoSelector.enable(); // Siempre habilitado
-},
+    const opcionesProducto = [
+      { valor: '', texto: '-- Ver todos --' },
+      ...productosFiltrados.map(p => ({ valor: p, texto: p }))
+    ];
+    this.elements.productoSelector.setOpciones(opcionesProducto);
+
+    const productoActual = this.elements.productoSelector.getValue();
+    if (productoActual && !opcionesProducto.some(opt => opt.valor === productoActual)) {
+      this.elements.productoSelector.limpiar();
+    }
+
+    this.elements.productoSelector.enable();
+  },
   
   // -------------------- TABLA DE PREDICCIÓN --------------------
   actualizarTablaPrediccion(prediccion, conteoPorMes) {
