@@ -39,12 +39,6 @@
   UI.elements.dropRemito.addEventListener('dragleave', () => UI.elements.dropRemito.classList.remove('dragover'));
   UI.elements.dropRemito.addEventListener('drop', (e) => { e.preventDefault(); UI.elements.dropRemito.classList.remove('dragover'); const file = e.dataTransfer.files[0]; if (file) { UI.elements.inputRemito.files = e.dataTransfer.files; UI.elements.inputRemito.dispatchEvent(new Event('change')); } });
 
-  // Toggle Activo
-  UI.elements.toggleActivo.addEventListener('change', () => {
-    UI.elements.activoSelector.limpiar();
-    UI.actualizarSelectores();
-  });
-
   // Selector de Activo (cuando cambia el valor oculto)
   UI.elements.activoSelector.addEventListener('change', () => {
     UI.actualizarSelectores();
@@ -52,54 +46,63 @@
 
   // ==================== BOTÓN ACTUALIZAR GRÁFICO (CORREGIDO) ====================
   UI.elements.verGraficoBtn.addEventListener('click', () => {
-    const producto = UI.elements.productoSelector.getValue();
-    const familia = UI.elements.familiaSelector.getValue();
-    const usarActivo = UI.elements.toggleActivo.checked;
-    const activo = UI.elements.activoSelector.getValue();
+  const producto = UI.elements.productoSelector.getValue();
+  const familia = UI.elements.familiaSelector.getValue();
+  const activo = UI.elements.activoSelector.getValue(); // ya sin toggle
 
-    let productosSeleccionados = [];
-    let titulo = '';
+  let productosSeleccionados = [];
+  let titulo = '';
 
-    // Caso 1: Hay un producto específico seleccionado
-    if (producto) {
-      productosSeleccionados = [producto];
-      titulo = `Producto: ${producto}`;
-    }
-    // Caso 2: No hay producto, pero sí familia
-    else if (familia) {
-      if (usarActivo && activo) {
-        const prodsFamilia = Data.productosPorFamilia.get(familia) || [];
-        const prodsDelActivo = Data.productosPorActivo.get(activo) || new Set();
-        productosSeleccionados = prodsFamilia.filter(p => prodsDelActivo.has(p));
-        if (productosSeleccionados.length === 0) {
-          UI.showToast(`No hay productos en la familia ${familia} con el activo ${activo}`, 'warning');
-          return;
-        }
-        titulo = `Activo: ${activo} (familia ${familia})`;
-      } else {
-        productosSeleccionados = Data.productosPorFamilia.get(familia) || [];
-        if (productosSeleccionados.length === 0) {
-          UI.showToast(`No hay productos en la familia ${familia}`, 'warning');
-          return;
-        }
-        titulo = `Familia: ${familia}`;
+  // Caso 1: Producto específico
+  if (producto) {
+    productosSeleccionados = [producto];
+    titulo = `Producto: ${producto}`;
+  }
+  // Caso 2: Familia (con o sin activo)
+  else if (familia) {
+    const prodsDeFamilia = Data.productosPorFamilia.get(familia) || [];
+    if (activo) {
+      const prodsDelActivo = Data.productosPorActivo.get(activo) || new Set();
+      productosSeleccionados = prodsDeFamilia.filter(p => prodsDelActivo.has(p));
+      if (productosSeleccionados.length === 0) {
+        UI.showToast(`No hay productos en la familia ${familia} con el activo ${activo}`, 'warning');
+        return;
       }
+      titulo = `Activo: ${activo} (familia ${familia})`;
+    } else {
+      productosSeleccionados = prodsDeFamilia;
+      if (productosSeleccionados.length === 0) {
+        UI.showToast(`No hay productos en la familia ${familia}`, 'warning');
+        return;
+      }
+      titulo = `Familia: ${familia}`;
     }
-    // Caso 3: No hay producto ni familia
-    else {
-      UI.showToast('Seleccione un producto o una familia para ver la predicción', 'warning');
+  }
+  // Caso 3: Solo Activo (sin familia ni producto)
+  else if (activo) {
+    const prodsDelActivo = Data.productosPorActivo.get(activo) || new Set();
+    productosSeleccionados = [...prodsDelActivo];
+    if (productosSeleccionados.length === 0) {
+      UI.showToast(`No hay productos con el activo ${activo}`, 'warning');
       return;
     }
+    titulo = `Activo: ${activo}`;
+  }
+  // Sin selección
+  else {
+    UI.showToast('Seleccione un producto, una familia o un activo para ver la predicción', 'warning');
+    return;
+  }
 
-    const series = Data.obtenerSeriesPorProductos(productosSeleccionados);
-    if (!series || series.prediccion.length === 0) {
-      UI.showToast('No hay datos suficientes para predecir', 'error');
-      return;
-    }
+  const series = Data.obtenerSeriesPorProductos(productosSeleccionados);
+  if (!series || series.prediccion.length === 0) {
+    UI.showToast('No hay datos suficientes para predecir', 'error');
+    return;
+  }
 
-    Charts.actualizarGraficoPrincipal(series, titulo, '', productosSeleccionados);
-    UI.showToast('Predicción actualizada', 'success');
-  });
+  Charts.actualizarGraficoPrincipal(series, titulo, '', productosSeleccionados);
+  UI.showToast('Predicción actualizada', 'success');
+});
 
   // ---------- EXPORTAR A EXCEL ----------
   if (UI.elements.exportarCsvBtn) {
